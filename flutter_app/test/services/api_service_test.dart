@@ -1,0 +1,81 @@
+import 'dart:convert';
+
+import 'package:analisis_riesgo_app/services/api_service.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
+
+void main() {
+  group('ApiService', () {
+    test('parses a successful response payload', () async {
+      final mock = MockClient((request) async {
+        expect(request.url.path, '/analyse');
+        expect(request.method, 'POST');
+        final body = jsonDecode(request.body) as Map<String, dynamic>;
+        expect(body['returns'], isA<List<dynamic>>());
+        expect(body['investment_amount'], 1000000);
+        expect(body['var_confidence'], 0.95);
+        expect(body['target_accept'], 0.9);
+
+        return http.Response(
+          jsonEncode({
+            'var_value': 50000.0,
+            'threshold_probability': 0.05,
+            'investment_amount': 1000000.0,
+            'var_confidence': 0.95,
+            'loss_threshold': 50000.0,
+            'parameter_means': {
+              'media_retorno': -0.001,
+              'desviacion_retorno': 0.02,
+            },
+            'histogram_base64': 'abc123',
+          }),
+          200,
+          headers: {'content-type': 'application/json'},
+        );
+      });
+
+      final service = ApiService(baseUrl: 'http://x', client: mock);
+      final result = await service.analyse(returns: [-0.1, 0.1]);
+
+      expect(result.varValue, 50000.0);
+      expect(result.thresholdProbability, 0.05);
+      expect(result.parameterMeans['media_retorno'], -0.001);
+      expect(result.histogramBase64, 'abc123');
+    });
+
+    test('throws on error status with backend detail', () async {
+      final mock = MockClient((request) async {
+        return http.Response(
+          jsonEncode({'detail': 'Datos de entrada invalidos'}),
+          400,
+          headers: {'content-type': 'application/json'},
+        );
+      });
+
+      final service = ApiService(baseUrl: 'http://x', client: mock);
+      await expectLater(
+        service.analyse(returns: [-0.1, 0.1]),
+        throwsA(
+          isA<Exception>().having(
+            (e) => e.toString(),
+            'message',
+            contains('Datos de entrada invalidos'),
+          ),
+        ),
+      );
+    });
+
+    test('throws on non-json error body', () async {
+      final mock = MockClient((request) async {
+        return http.Response('upstream exploded', 500);
+      });
+
+      final service = ApiService(baseUrl: 'http://x', client: mock);
+      await expectLater(
+        service.analyse(returns: [-0.1, 0.1]),
+        throwsA(isA<Exception>()),
+      );
+    });
+  });
+}

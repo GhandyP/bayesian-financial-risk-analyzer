@@ -36,9 +36,11 @@ class RiskResponse {
 }
 
 class ApiService {
-  ApiService({required this.baseUrl});
+  ApiService({required this.baseUrl, http.Client? client})
+      : _client = client ?? http.Client();
 
   final String baseUrl;
+  final http.Client _client;
 
   Future<RiskResponse> analyse({
     required List<double> returns,
@@ -61,7 +63,7 @@ class ApiService {
       'target_accept': targetAccept,
     };
 
-    final response = await http.post(
+    final response = await _client.post(
       uri,
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(payload),
