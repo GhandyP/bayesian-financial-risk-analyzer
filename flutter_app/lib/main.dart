@@ -4,6 +4,9 @@ import 'config/api_config.dart';
 import 'services/api_service.dart';
 import 'utils/parsing_logic.dart';
 import 'widgets/loss_histogram.dart';
+import 'widgets/results_card.dart';
+import 'widgets/returns_input.dart';
+import 'widgets/risk_form_fields.dart';
 
 void main() {
   runApp(const AnalisisRiesgoApp());
@@ -73,58 +76,15 @@ class _RiskFormPageState extends State<RiskFormPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(
-                  'Introduce retornos historicos (como proporciones, p. ej. -0.012). Usa comas o saltos de linea.',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _returnsController,
-                  minLines: 6,
-                  maxLines: 14,
-                  decoration: const InputDecoration(
-                    labelText: 'Retornos historicos',
-                    hintText: '-0.003, 0.012, -0.005',
-                    border: OutlineInputBorder(),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Debe ingresar retornos historicos.';
-                    }
-                    try {
-                      final returns = parseReturns(value);
-                      if (returns.length < 10) {
-                        return 'Se requieren al menos 10 retornos.';
-                      }
-                    } catch (error) {
-                      return error.toString();
-                    }
-                    return null;
-                  },
-                ),
+                ReturnsInputWidget(controller: _returnsController),
                 const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(child: _buildDoubleField('Monto invertido', _investmentController, min: 1)),
-                    const SizedBox(width: 12),
-                    Expanded(child: _buildDoubleField('VaR (confianza)', _varConfidenceController, min: 0.8, max: 0.999)),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(child: _buildDoubleField('Umbral de perdida', _thresholdController, min: 0)),
-                    const SizedBox(width: 12),
-                    Expanded(child: _buildIntegerField('Iteraciones (draws)', _drawsController, min: 500)),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(child: _buildIntegerField('Calentamiento (tune)', _tuneController, min: 200)),
-                    const SizedBox(width: 12),
-                    Expanded(child: _buildDoubleField('Target accept', _targetAcceptController, min: 0.5, max: 0.99)),
-                  ],
+                RiskFormFields(
+                  investmentController: _investmentController,
+                  varConfidenceController: _varConfidenceController,
+                  thresholdController: _thresholdController,
+                  drawsController: _drawsController,
+                  tuneController: _tuneController,
+                  targetAcceptController: _targetAcceptController,
                 ),
                 const SizedBox(height: 24),
                 FilledButton.icon(
@@ -139,9 +99,7 @@ class _RiskFormPageState extends State<RiskFormPage> {
                   Text(_errorMessage!, style: const TextStyle(color: Colors.redAccent)),
                 if (_response != null) ...[
                   const SizedBox(height: 16),
-                  _buildSummaryCard(_response!),
-                  const SizedBox(height: 16),
-                  _buildParametersCard(_response!),
+                  ResultsCard(response: _response!),
                   const SizedBox(height: 24),
                   Text('Distribucion simulada de perdidas', style: Theme.of(context).textTheme.titleMedium),
                   const SizedBox(height: 8),
@@ -152,96 +110,6 @@ class _RiskFormPageState extends State<RiskFormPage> {
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildSummaryCard(RiskResponse response) {
-    final textTheme = Theme.of(context).textTheme;
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Resumen de riesgo', style: textTheme.titleMedium),
-            const SizedBox(height: 8),
-            Text('VaR ${response.varConfidence.toStringAsFixed(2)}: ${response.varValue.toStringAsFixed(0)}'),
-            Text('Prob. perdida >= ${response.lossThreshold.toStringAsFixed(0)}: '
-                '${(response.thresholdProbability * 100).toStringAsFixed(2)} %'),
-            Text('Monto invertido: ${response.investmentAmount.toStringAsFixed(0)}'),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildParametersCard(RiskResponse response) {
-    final textTheme = Theme.of(context).textTheme;
-    return Card(
-      elevation: 1,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Medias de parametros', style: textTheme.titleMedium),
-            const SizedBox(height: 8),
-            for (final entry in response.parameterMeans.entries)
-              Text('${entry.key}: ${entry.value.toStringAsFixed(5)}'),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildIntegerField(String label, TextEditingController controller, {int? min, int? max}) {
-    return TextFormField(
-      controller: controller,
-      keyboardType: TextInputType.number,
-      decoration: InputDecoration(labelText: label, border: const OutlineInputBorder()),
-      validator: (value) {
-        if (value == null || value.trim().isEmpty) {
-          return 'Requerido';
-        }
-        final parsed = int.tryParse(value);
-        if (parsed == null) {
-          return 'Debe ser un numero entero';
-        }
-        if (min != null && parsed < min) {
-          return 'Minimo $min';
-        }
-        if (max != null && parsed > max) {
-          return 'Maximo $max';
-        }
-        return null;
-      },
-    );
-  }
-
-  Widget _buildDoubleField(String label, TextEditingController controller, {double? min, double? max}) {
-    return TextFormField(
-      controller: controller,
-      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-      decoration: InputDecoration(labelText: label, border: const OutlineInputBorder()),
-      validator: (value) {
-        if (value == null || value.trim().isEmpty) {
-          return 'Requerido';
-        }
-        final parsed = double.tryParse(value);
-        if (parsed == null) {
-          return 'Debe ser un numero';
-        }
-        if (min != null && parsed < min) {
-          return 'Minimo $min';
-        }
-        if (max != null && parsed > max) {
-          return 'Maximo $max';
-        }
-        return null;
-      },
     );
   }
 
