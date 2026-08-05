@@ -42,8 +42,15 @@ def run_risk_analysis(
     draws: int = 2000,
     tune: int = 1000,
     target_accept: float = 0.9,
+    include_full_samples: bool = False,
 ) -> RiskAnalysisResult:
-    """Estimate Value at Risk (VaR) and tail probabilities from historical returns."""
+    """Estimate Value at Risk (VaR) and tail probabilities from historical returns.
+
+    By default the heavy posterior samples (``losses_samples`` and ``raw_trace``)
+    are NOT materialized, because most consumers only need the summary metrics,
+    the parameter means and the histogram. Passing ``include_full_samples=True``
+    opt-in recovers the full simulation arrays when a caller really needs them.
+    """
 
     if investment_amount <= 0:
         raise ValueError("investment_amount debe ser positivo.")
@@ -99,10 +106,17 @@ def run_risk_analysis(
         "desviacion_retorno": float(trace["desviacion_retorno"].mean()),
     }
 
-    raw_trace = {
-        "media_retorno": trace["media_retorno"].tolist(),
-        "desviacion_retorno": trace["desviacion_retorno"].tolist(),
-    }
+    losses_samples: list[float]
+    raw_trace: dict
+    if include_full_samples:
+        losses_samples = simulated_losses.tolist()
+        raw_trace = {
+            "media_retorno": trace["media_retorno"].tolist(),
+            "desviacion_retorno": trace["desviacion_retorno"].tolist(),
+        }
+    else:
+        losses_samples = []
+        raw_trace = {}
 
     return RiskAnalysisResult(
         var_value=var_value,
@@ -110,7 +124,7 @@ def run_risk_analysis(
         investment_amount=float(investment_amount),
         var_confidence=float(var_confidence),
         loss_threshold=float(loss_threshold),
-        losses_samples=simulated_losses.tolist(),
+        losses_samples=losses_samples,
         parameter_means=parameter_means,
         histogram_base64=histogram_base64,
         raw_trace=raw_trace,
