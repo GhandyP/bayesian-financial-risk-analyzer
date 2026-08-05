@@ -1,5 +1,6 @@
 """Tests for FastAPI backend endpoints."""
 
+import asyncio
 import json
 import sys
 from pathlib import Path
@@ -183,6 +184,31 @@ class TestAnalyseEndpoint:
         response = client.post("/analyse", json=payload)
         assert response.status_code == 200
         mock_run.assert_called_once()
+
+    @patch("backend.main.run_risk_analysis")
+    def test_analyse_maps_model_value_error_to_400(self, mock_run) -> None:
+        """A ValueError raised by the model should surface as HTTP 400."""
+        mock_run.side_effect = ValueError("Datos de entrada invalidos")
+        payload = {
+            "returns": [-0.01 for _ in range(10)],
+            "investment_amount": 1000000,
+        }
+        response = client.post("/analyse", json=payload)
+        assert response.status_code == 400
+        assert response.json()["detail"] == "Datos de entrada invalidos"
+
+    @patch("backend.main.asyncio.wait_for")
+    @patch("backend.main.run_risk_analysis")
+    def test_analyse_times_out_to_504(self, mock_run, mock_wait_for) -> None:
+        """Inference that exceeds the timeout should surface as HTTP 504."""
+        mock_wait_for.side_effect = asyncio.TimeoutError()
+        payload = {
+            "returns": [-0.01 for _ in range(10)],
+            "investment_amount": 1000000,
+        }
+        response = client.post("/analyse", json=payload)
+        assert response.status_code == 504
+        assert response.json()["detail"] == "Inference timed out"
 
 
 class TestModelDefensiveValidation:
