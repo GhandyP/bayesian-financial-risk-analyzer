@@ -1,9 +1,5 @@
 # PROJECT KNOWLEDGE BASE
 
-**Generated:** 2026-02-19T02:03:24Z
-**Commit:** ea01bbd
-**Branch:** main
-
 ## OVERVIEW
 Risk analysis project: Bayesian PyMC model + FastAPI API + Flutter UI. Small repo, direct integration, minimal layering.
 
@@ -12,16 +8,23 @@ Risk analysis project: Bayesian PyMC model + FastAPI API + Flutter UI. Small rep
 ./
 ├── Analisis_Riesgo_PyMC.py
 ├── backend/
+│   ├── main.py
+│   ├── models.py
+│   └── test_main.py
 ├── flutter_app/
+│   ├── lib/
+│   ├── test/
+│   └── pubspec.yaml
 ├── .github/workflows/ci.yml
-└── .sisyphus/
+└── .gitignore
 ```
 
 ## WHERE TO LOOK
 | Task | Location | Notes |
 |------|----------|-------|
 | Bayesian model logic | `Analisis_Riesgo_PyMC.py` | Core VaR + posterior predictive sampling |
-| API contracts/validation | `backend/main.py` | Pydantic request model, FastAPI routes |
+| API contracts/validation | `backend/models.py` | Pydantic request/response models |
+| API routes/config | `backend/main.py` | FastAPI routes, CORS, runtime settings |
 | Backend tests | `backend/test_main.py` | Uses `TestClient`; model call patched |
 | Flutter page flow | `flutter_app/lib/main.dart` | Entry widget + submission state |
 | Flutter parsing | `flutter_app/lib/utils/parsing_logic.dart` | Shared return parser |
@@ -32,7 +35,8 @@ Risk analysis project: Bayesian PyMC model + FastAPI API + Flutter UI. Small rep
 | Symbol | Type | Location | Refs | Role |
 |--------|------|----------|------|------|
 | `run_risk_analysis` | function | `Analisis_Riesgo_PyMC.py` | high | Main statistical compute path |
-| `RiskRequest` | class | `backend/main.py` | medium | API request schema/validation |
+| `RiskRequest` | class | `backend/models.py` | medium | API request schema/validation |
+| `RiskResponse` | class | `backend/models.py` | medium | API response contract |
 | `analyse` | route fn | `backend/main.py` | high | Bridges API input to model output |
 | `ApiService.analyse` | method | `flutter_app/lib/services/api_service.dart` | high | HTTP adapter for UI submit |
 | `parseReturns` | function | `flutter_app/lib/utils/parsing_logic.dart` | medium | Input normalization + validation |

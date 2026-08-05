@@ -106,7 +106,7 @@ cd flutter_app && flutter analyze
 cd flutter_app && flutter test
 ```
 
-The backend tests mock the expensive PyMC and Matplotlib integrations for API contract checks. The model still performs defensive validation before sampling, including finite values and the 2000-return upper bound.
+The backend tests mock the expensive PyMC and Matplotlib integrations for API contract checks, and cover the 400 (model error) and 504 (timeout) branches. The model still performs defensive validation before sampling, including finite values and the 2000-return upper bound. Flutter tests cover parsing, the input/result widgets and the API service with a mocked HTTP client.
 
 ## Troubleshooting
 
