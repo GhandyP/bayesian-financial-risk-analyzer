@@ -33,15 +33,32 @@ mostrar.
 
 | # | Task | Commit | Estado | Evidencia |
 |---|---|---|---|---|
-| 1 | venv 3.11 reproducible + instalar pins | `chore(env): ...` | pending | versión PyMC instalada, `.venv/` ignorado |
-| 2 | Correr el modelo real y arreglar incompatibilidades (PyMC 5.27 / `return_inferencedata`) | `fix(model): ...` | pending | VaR real impreso, error original documentado |
-| 3 | Smoke test del camino real, marcado `slow` | `test(model): ...` | pending | test pasa local, excluido del default |
+| 1 | venv 3.11 reproducible + instalar pins | sin commit (`.venv/` está ignorado) | **DONE** | `.venv` con pymc 5.27.1, numpy 2.2.2, pandas 2.2.3, matplotlib 3.10.0, fastapi 0.115.8 |
+| 2 | Correr el modelo real y arreglar incompatibilidades | `910f5e1` `fix(model)` | **DONE** | `TypeError: sample_posterior_predictive() got an unexpected keyword argument 'samples'`; tras el fix, POST /analyse devuelve 200 en 14.6s con PNG válido |
+| 3 | Smoke test del camino real, marcado `slow` | `ed13167` `test(model)` | **DONE** | `pytest backend/test_model_smoke.py -m slow` → 2 passed en 25.6s; suite rápida 16 passed, 2 deselected |
 | 4 | `MAX_RETURNS` con fuente única de verdad | `refactor(contract): ...` | pending | un solo literal; tests del backend verdes |
 | 5 | 422 legible en el cliente Flutter | `fix(api): ...` | pending | test Dart con `detail` como lista |
 | 6 | Espejar límites del backend en validadores Flutter | `fix(ui): ...` | pending | casos límite cubiertos por test |
 | 7 | Test de drift de contrato | `test(contract): ...` | pending | rename simulado rompe CI |
 | 8 | CI: ruff pinneado, nombre del job, pin de Flutter | `chore(ci): ...` | pending | lint corre y falla a propósito |
 | 9 | Docs: README/AGENTS al día | `docs: ...` | pending | comandos verificados |
+
+## Bitácora de hallazgos medidos (no inferidos)
+
+1. **El camino real estaba roto al 100%.** Con `pymc==5.27.1`, `pm.sample_posterior_predictive` ya
+   no acepta `samples=` y devuelve un `InferenceData` por defecto. `run_risk_analysis` lanzaba
+   `TypeError` siempre, así que POST /analyse devolvía 500 para cualquier request. Los 16 tests
+   pasaban porque `test_main.py` reemplaza `pymc` por un `MagicMock`.
+2. **`return_inferencedata=False` en `pm.sample` NO rompe** en la versión pinneada: la sospecha
+   quedó descartada con una corrida real. Sigue siendo API legada, pero no es un bug.
+3. **Latencia real medida**: 13.6s con los defaults (`draws=2000, tune=1000`), 10.2s con el
+   mínimo (`draws=500, tune=200`), 14.6s el request HTTP completo con 10 retornos. Muy por
+   debajo del timeout de 120s del backend.
+4. **El 422 confirmado como lista**: `detail = [{"loc": ["body", "draws"], "msg": "Input
+   should be less than or equal to 10000", ...}]`. El cliente solo sabe formatear `detail`
+   como `String` o `Map`, así que hoy muestra el JSON crudo (task 5).
+5. **La predictiva se aplana sobre las observaciones**: 10000 valores = 1000 muestras
+   posteriores x 10 observaciones. Documentado en `model-reliability` como insumo de la fase (c).
 
 ## Riesgos
 
