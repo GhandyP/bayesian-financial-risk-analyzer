@@ -49,6 +49,24 @@ Evidencia del estado actual:
 - Flutter sin verificación local: el render de campos nuevos se inspecciona y se valida en CI.
 - El backtest debe ser determinista (semilla fija) para no producir fallos intermitentes.
 
+## Notas metodológicas descubiertas durante (a)
+
+- **La posterior predictiva se aplana sobre las observaciones.** Con `draws=500` y 2 cadenas,
+  `simulated_losses` tiene 10000 valores = 1000 muestras posteriores x 10 observaciones
+  (`Analisis_Riesgo_PyMC.py:93`). Las 10 predicciones por muestra son iid del mismo Normal,
+  así que el VaR es correcto, pero el conteo *independiente* de muestras es el tamaño de la
+  posterior (1000), no 10000. Efecto: el error de Monte Carlo del VaR se subestima.
+  En la task 2 conviene simular una muestra de retorno por muestra posterior (por ejemplo
+  desde la posterior de `mu`/`sigma`) en lugar de predecir las observaciones observadas.
+- **Documentado y verificado**: el tamaño de la predictiva ya no se puede fijar con un
+  parámetro; escala con `draws` x cadenas x observaciones. El `draws` del request pasó a
+  controlar el costo de la simulación, no solo el muestreo.
+
+## Task 4: campos nuevos del contrato
+
+- `expected_shortfall` (ES) e intervalo de incertidumbre del VaR (`var_value_lower`,
+  `var_value_upper`).
+
 ## Notas de recuperación
 
 `mem_search` por `model-reliability`, leer este archivo, seguir desde la primera task en `pending`.
