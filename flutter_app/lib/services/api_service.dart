@@ -85,10 +85,49 @@ class ApiService {
       if (detail is String) {
         return detail;
       }
+      if (detail is List) {
+        // FastAPI answers request validation failures with 422 and a list of
+        // Pydantic error objects, which is the shape the UI used to print raw.
+        final messages = _formatValidationErrors(detail);
+        if (messages.isNotEmpty) {
+          return messages;
+        }
+      }
       if (detail is Map<String, dynamic> && detail['detail'] != null) {
         return detail['detail'].toString();
       }
     } catch (_) {}
     return body.isEmpty ? 'Respuesta vacia del servidor.' : body;
+  }
+
+  /// Renders ``[{loc: [body, draws], msg: ...}]`` as one readable line per error.
+  String _formatValidationErrors(List<dynamic> errors) {
+    final lines = <String>[];
+    for (final error in errors) {
+      if (error is! Map<String, dynamic>) {
+        continue;
+      }
+      final message = error['msg'];
+      if (message is! String) {
+        continue;
+      }
+      final field = _fieldFromLocation(error['loc']);
+      lines.add(field == null ? message : '$field: $message');
+    }
+    return lines.join('\n');
+  }
+
+  /// ``loc`` is a path such as ``[body, draws]``; the field name is its tail.
+  String? _fieldFromLocation(Object? loc) {
+    if (loc is! List || loc.isEmpty) {
+      return null;
+    }
+    final parts = loc
+        .where((part) => part is String && part != 'body')
+        .toList(growable: false);
+    if (parts.isEmpty) {
+      return null;
+    }
+    return parts.join('.');
   }
 }

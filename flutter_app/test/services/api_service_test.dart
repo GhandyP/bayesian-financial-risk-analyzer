@@ -77,5 +77,49 @@ void main() {
         throwsA(isA<Exception>()),
       );
     });
+
+    // Payload captured from a real FastAPI 422 response body.
+    test('renders 422 validation details as readable lines', () async {
+      final mock = MockClient((request) async {
+        return http.Response(
+          jsonEncode({
+            'detail': [
+              {
+                'type': 'less_than_equal',
+                'loc': ['body', 'draws'],
+                'msg': 'Input should be less than or equal to 10000',
+                'input': 99999,
+                'ctx': {'le': 10000},
+              },
+              {
+                'type': 'greater_than_equal',
+                'loc': ['body', 'tune'],
+                'msg': 'Input should be greater than or equal to 200',
+                'input': 10,
+                'ctx': {'ge': 200},
+              },
+            ],
+          }),
+          422,
+          headers: {'content-type': 'application/json'},
+        );
+      });
+
+      final service = ApiService(baseUrl: 'http://x', client: mock);
+      await expectLater(
+        service.analyse(returns: [-0.1, 0.1]),
+        throwsA(
+          isA<Exception>().having(
+            (e) => e.toString(),
+            'message',
+            allOf(
+              contains('draws: Input should be less than or equal to 10000'),
+              contains('tune: Input should be greater than or equal to 200'),
+              isNot(contains('"loc"')),
+            ),
+          ),
+        ),
+      );
+    });
   });
 }
