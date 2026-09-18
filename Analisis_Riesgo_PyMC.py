@@ -85,9 +85,14 @@ def run_risk_analysis(
             return_inferencedata=False,
         )
 
-        predictive = pm.sample_posterior_predictive(trace, samples=5_000, progressbar=False)
+        # PyMC 5 no longer accepts a sample count here: the size of the predictive
+        # draw set is taken from the posterior trace, so it scales with ``draws``
+        # (times the number of chains). Do not reintroduce ``samples=``/``draws=``.
+        predictive = pm.sample_posterior_predictive(trace, progressbar=False)
 
-    simulated_returns = predictive["retornos"].ravel()
+    # ``sample_posterior_predictive`` returns an InferenceData group by default in
+    # PyMC 5; read the predictive draws from that group instead of a plain dict.
+    simulated_returns = predictive.posterior_predictive["retornos"].to_numpy().ravel()
     simulated_losses = -simulated_returns * investment_amount
 
     var_percentile = var_confidence * 100.0
