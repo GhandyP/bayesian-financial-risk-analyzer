@@ -15,7 +15,7 @@ import numpy as np
 import pandas as pd
 import pymc as pm
 
-from risk_limits import MAX_RETURNS
+from risk_limits import MAX_RETURNS, MIN_RETURNS
 
 
 @dataclass
@@ -60,8 +60,8 @@ def run_risk_analysis(
     returns_array = _coerce_returns(returns)
     if not np.isfinite(returns_array).all():
         raise ValueError("Los retornos no pueden contener NaN o infinito.")
-    if returns_array.size < 10:
-        raise ValueError("Se requieren al menos 10 retornos historicos.")
+    if returns_array.size < MIN_RETURNS:
+        raise ValueError(f"Se requieren al menos {MIN_RETURNS} retornos historicos.")
     if returns_array.size > MAX_RETURNS:
         raise ValueError(f"El numero maximo de retornos es {MAX_RETURNS}.")
 

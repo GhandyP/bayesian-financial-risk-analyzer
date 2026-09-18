@@ -12,3 +12,6 @@ from __future__ import annotations
 # Bayesian model is compute-heavy, and a 2000-point series is well beyond what
 # VaR estimation needs while still keeping the request body small.
 MAX_RETURNS = 2000
+
+# Minimum series length the analysis is willing to fit a posterior on.
+MIN_RETURNS = 10

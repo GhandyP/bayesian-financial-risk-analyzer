@@ -82,6 +82,76 @@ void main() {
 
       expect(find.text('Debe ser un numero entero'), findsOneWidget);
     });
+
+    Future<void> validate(WidgetTester tester, List<TextEditingController> c,
+        {TextEditingController? draws,
+        TextEditingController? varConfidence}) async {
+      final c2 = c;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Form(
+              child: RiskFormFields(
+                investmentController: c2[0],
+                varConfidenceController: varConfidence ?? c2[1],
+                thresholdController: c2[2],
+                drawsController: draws ?? c2[3],
+                tuneController: c2[4],
+                targetAcceptController: c2[5],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final form = tester.state(find.byType(Form)) as FormState;
+      form.validate();
+      await tester.pump();
+    }
+
+    testWidgets('rejects draws above the backend maximum',
+        (WidgetTester tester) async {
+      await validate(tester, controllers(),
+          draws: TextEditingController(text: '99999'));
+
+      expect(find.text('Maximo 10000'), findsOneWidget);
+    });
+
+    testWidgets('rejects tune above the backend maximum',
+        (WidgetTester tester) async {
+      final c = controllers();
+      c[4] = TextEditingController(text: '20000');
+
+      await validate(tester, c);
+
+      expect(find.text('Maximo 10000'), findsOneWidget);
+    });
+
+    testWidgets('rejects var confidence at the exclusive upper bound',
+        (WidgetTester tester) async {
+      await validate(tester, controllers(),
+          varConfidence: TextEditingController(text: '1.0'));
+
+      expect(find.text('Debe ser menor a 1.0'), findsOneWidget);
+    });
+
+    testWidgets('rejects the investment amount at the exclusive lower bound',
+        (WidgetTester tester) async {
+      final c = controllers();
+      c[0] = TextEditingController(text: '0');
+
+      await validate(tester, c);
+
+      expect(find.text('Debe ser mayor a 0.0'), findsOneWidget);
+    });
+
+    // NaN compares false against every bound, so it needs its own guard.
+    testWidgets('rejects non-finite double fields', (WidgetTester tester) async {
+      await validate(tester, controllers(),
+          varConfidence: TextEditingController(text: 'NaN'));
+
+      expect(find.text('Debe ser un numero finito'), findsOneWidget);
+    });
   });
 
   group('ResultsCard', () {

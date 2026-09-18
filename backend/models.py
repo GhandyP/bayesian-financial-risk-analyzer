@@ -7,7 +7,7 @@ from typing import List
 
 from pydantic import BaseModel, Field, field_validator
 
-from risk_limits import MAX_RETURNS
+from risk_limits import MAX_RETURNS, MIN_RETURNS
 
 
 class RiskRequest(BaseModel):
@@ -22,8 +22,8 @@ class RiskRequest(BaseModel):
     @field_validator("returns")
     @classmethod
     def _validate_returns(cls, value: List[float]) -> List[float]:
-        if len(value) < 10:
-            raise ValueError("Debe proporcionar al menos 10 retornos historicos.")
+        if len(value) < MIN_RETURNS:
+            raise ValueError(f"Debe proporcionar al menos {MIN_RETURNS} retornos historicos.")
         if len(value) > MAX_RETURNS:
             raise ValueError(f"El numero maximo de retornos es {MAX_RETURNS}.")
         if any(not math.isfinite(item) for item in value):
