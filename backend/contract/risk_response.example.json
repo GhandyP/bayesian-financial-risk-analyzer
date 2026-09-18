@@ -1,0 +1,12 @@
+{
+  "var_value": 50000.0,
+  "threshold_probability": 0.05,
+  "investment_amount": 1000000.0,
+  "var_confidence": 0.95,
+  "loss_threshold": 50000.0,
+  "parameter_means": {
+    "media_retorno": -0.001,
+    "desviacion_retorno": 0.02
+  },
+  "histogram_base64": "iVBORw0KGgo="
+}
