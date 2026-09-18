@@ -7,11 +7,7 @@ from typing import List
 
 from pydantic import BaseModel, Field, field_validator
 
-# Upper bound for the number of historical returns accepted per request. The
-# Bayesian model is compute-heavy, and a 2000-point series is well beyond what
-# the VaR estimation needs while still keeping the request body small. A
-# tighter cap also bounds sampling time on oversized payloads.
-MAX_RETURNS = 2000
+from risk_limits import MAX_RETURNS
 
 
 class RiskRequest(BaseModel):

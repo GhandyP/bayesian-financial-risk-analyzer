@@ -15,9 +15,7 @@ import numpy as np
 import pandas as pd
 import pymc as pm
 
-
-# Bound the input before allocating model and posterior predictive work.
-MAX_RETURNS = 2000
+from risk_limits import MAX_RETURNS
 
 
 @dataclass
