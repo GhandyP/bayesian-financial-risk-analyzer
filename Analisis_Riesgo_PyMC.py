@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import base64
 import io
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
-from typing import Iterable, Mapping, Sequence
 
 import matplotlib
 
@@ -65,7 +65,7 @@ def run_risk_analysis(
     if returns_array.size > MAX_RETURNS:
         raise ValueError(f"El numero maximo de retornos es {MAX_RETURNS}.")
 
-    with pm.Model() as model:
+    with pm.Model():
         media_retorno = pm.Normal(
             "media_retorno", mu=float(returns_array.mean()), sigma=max(float(returns_array.std()), 0.01)
         )

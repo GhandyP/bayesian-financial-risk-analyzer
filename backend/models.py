@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import math
-from typing import List
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -11,7 +10,7 @@ from risk_limits import MAX_RETURNS, MIN_RETURNS
 
 
 class RiskRequest(BaseModel):
-    returns: List[float]
+    returns: list[float]
     investment_amount: float = Field(1_000_000.0, gt=0)
     var_confidence: float = Field(0.95, ge=0.8, lt=1.0)
     loss_threshold: float = Field(50_000.0, ge=0)
@@ -21,7 +20,7 @@ class RiskRequest(BaseModel):
 
     @field_validator("returns")
     @classmethod
-    def _validate_returns(cls, value: List[float]) -> List[float]:
+    def _validate_returns(cls, value: list[float]) -> list[float]:
         if len(value) < MIN_RETURNS:
             raise ValueError(f"Debe proporcionar al menos {MIN_RETURNS} retornos historicos.")
         if len(value) > MAX_RETURNS:
