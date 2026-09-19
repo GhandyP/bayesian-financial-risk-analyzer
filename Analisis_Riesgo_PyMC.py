@@ -17,6 +17,18 @@ import pymc as pm
 
 from risk_limits import MAX_RETURNS, MIN_RETURNS
 
+# Weakly informative, data-independent priors.
+#
+# Returns are proportions (``-0.012`` is ``-1.2%``), so these values stay
+# defensible for anything from daily to monthly periods while letting the
+# likelihood determine the answer. They deliberately do NOT read
+# ``returns.mean()``/``returns.std()``: centring the prior on the sample would
+# let the data enter the model twice, once through the prior and once through
+# the likelihood, and would understate the posterior uncertainty.
+PRIOR_MEAN_LOCATION = 0.0
+PRIOR_MEAN_SCALE = 0.05
+PRIOR_SIGMA_SCALE = 0.05
+
 
 @dataclass
 class RiskAnalysisResult:
@@ -67,10 +79,10 @@ def run_risk_analysis(
 
     with pm.Model():
         media_retorno = pm.Normal(
-            "media_retorno", mu=float(returns_array.mean()), sigma=max(float(returns_array.std()), 0.01)
+            "media_retorno", mu=PRIOR_MEAN_LOCATION, sigma=PRIOR_MEAN_SCALE
         )
         desviacion_retorno = pm.HalfNormal(
-            "desviacion_retorno", sigma=max(float(returns_array.std()), 0.02)
+            "desviacion_retorno", sigma=PRIOR_SIGMA_SCALE
         )
 
         pm.Normal("retornos", mu=media_retorno, sigma=desviacion_retorno, observed=returns_array)
