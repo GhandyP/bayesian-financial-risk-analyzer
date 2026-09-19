@@ -7,6 +7,7 @@ import io
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 
+import arviz as az
 import matplotlib
 
 matplotlib.use("Agg")
@@ -49,6 +50,27 @@ PRIOR_SIGMA_LOG_SCALE = 1.0
 MIN_DEGREES_OF_FREEDOM = 2.0
 PRIOR_NU_RATE = 0.1
 
+# Convergence thresholds for the fitted posterior, following the usual
+# recommendations: rhat close to 1, a few hundred effective samples, and no
+# divergent transitions.
+#
+# A posterior that fails these does not produce a smaller number, it produces a
+# wrong one, so the analysis raises instead of returning a value the caller
+# cannot distinguish from a trustworthy one.
+CHAIN_COUNT = 4
+MAX_RHAT = 1.01
+MIN_EFFECTIVE_SAMPLE_SIZE = 400.0
+MAX_DIVERGENCES = 0
+
+# Fixed so a given request is reproducible: the simulated losses drive the
+# reported VaR, and an unseeded run would make every response a different
+# number for the same input.
+SAMPLING_SEED = 20260101
+
+
+class ConvergenceError(RuntimeError):
+    """Raised when the posterior did not converge well enough to be reported."""
+
 
 @dataclass
 class RiskAnalysisResult:
@@ -61,6 +83,7 @@ class RiskAnalysisResult:
     parameter_means: dict[str, float]
     histogram_base64: str
     raw_trace: dict
+    diagnostics: dict[str, float | int | bool]
 
 
 def run_risk_analysis(
@@ -141,14 +164,21 @@ def run_risk_analysis(
             draws=draws,
             tune=tune,
             target_accept=target_accept,
+            # Four chains is the minimum for rhat to mean anything: PyMC warns
+            # that two are not enough to compute convergence diagnostics.
+            chains=CHAIN_COUNT,
+            cores=CHAIN_COUNT,
+            random_seed=SAMPLING_SEED,
             progressbar=False,
-            return_inferencedata=False,
         )
 
         # PyMC 5 no longer accepts a sample count here: the size of the predictive
         # draw set is taken from the posterior trace, so it scales with ``draws``
         # (times the number of chains). Do not reintroduce ``samples=``/``draws=``.
         predictive = pm.sample_posterior_predictive(trace, progressbar=False)
+
+    diagnostics = _convergence_diagnostics(trace)
+    _require_convergence(diagnostics)
 
     # ``sample_posterior_predictive`` returns an InferenceData group by default in
     # PyMC 5; read the predictive draws from that group instead of a plain dict.
@@ -167,9 +197,9 @@ def run_risk_analysis(
     )
 
     parameter_means = {
-        "media_retorno": float(trace["media_retorno"].mean()),
-        "desviacion_retorno": float(trace["desviacion_retorno"].mean()),
-        "nu": float(trace["nu"].mean()),
+        "media_retorno": float(trace.posterior["media_retorno"].mean()),
+        "desviacion_retorno": float(trace.posterior["desviacion_retorno"].mean()),
+        "nu": float(trace.posterior["nu"].mean()),
     }
 
     losses_samples: list[float]
@@ -177,8 +207,11 @@ def run_risk_analysis(
     if include_full_samples:
         losses_samples = simulated_losses.tolist()
         raw_trace = {
-            "media_retorno": trace["media_retorno"].tolist(),
-            "desviacion_retorno": trace["desviacion_retorno"].tolist(),
+            "media_retorno": trace.posterior["media_retorno"].to_numpy().ravel().tolist(),
+            "desviacion_retorno": trace.posterior["desviacion_retorno"]
+            .to_numpy()
+            .ravel()
+            .tolist(),
         }
     else:
         losses_samples = []
@@ -194,6 +227,7 @@ def run_risk_analysis(
         parameter_means=parameter_means,
         histogram_base64=histogram_base64,
         raw_trace=raw_trace,
+        diagnostics=diagnostics,
     )
 
 
@@ -211,6 +245,42 @@ def _coerce_returns(
         raise ValueError("Los retornos deben ser una secuencia unidimensional.")
 
     return array
+
+
+def _convergence_diagnostics(trace: az.InferenceData) -> dict[str, float | int | bool]:
+    """MCMC health indicators for the fitted posterior, computed with ArviZ.
+
+    ``max_rhat`` and ``min_ess`` are taken over every posterior variable, so a
+    single badly mixing parameter cannot hide behind the others.
+    """
+    rhat = az.rhat(trace)
+    ess = az.ess(trace)
+    max_rhat = max(float(rhat[name].max()) for name in rhat.data_vars)
+    min_ess = min(float(ess[name].min()) for name in ess.data_vars)
+    divergences = int(trace.sample_stats["diverging"].sum())
+    return {
+        "max_rhat": max_rhat,
+        "min_ess": min_ess,
+        "divergences": divergences,
+        "converged": (
+            max_rhat <= MAX_RHAT
+            and min_ess >= MIN_EFFECTIVE_SAMPLE_SIZE
+            and divergences <= MAX_DIVERGENCES
+        ),
+    }
+
+
+def _require_convergence(diagnostics: dict[str, float | int | bool]) -> None:
+    """Refuse to report a number from a posterior that did not converge."""
+    if diagnostics["converged"]:
+        return
+    raise ConvergenceError(
+        "El muestreo no convergio: "
+        f"rhat maximo {diagnostics['max_rhat']:.4f} (limite {MAX_RHAT}), "
+        f"ESS minimo {diagnostics['min_ess']:.0f} "
+        f"(minimo {MIN_EFFECTIVE_SAMPLE_SIZE:.0f}), "
+        f"divergencias {diagnostics['divergences']} (maximo {MAX_DIVERGENCES})."
+    )
 
 
 def _encode_histogram(

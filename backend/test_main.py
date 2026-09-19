@@ -12,6 +12,7 @@ from fastapi.testclient import TestClient
 sys.modules["pymc"] = MagicMock()
 sys.modules["matplotlib"] = MagicMock()
 sys.modules["matplotlib.pyplot"] = MagicMock()
+sys.modules["arviz"] = MagicMock()
 
 # Add parent directory to path for imports
 MODEL_DIR = Path(__file__).resolve().parents[1]
