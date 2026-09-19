@@ -47,7 +47,7 @@ class TestAnalyseEndpoint:
         mock_result.investment_amount = 1000000.0
         mock_result.var_confidence = 0.95
         mock_result.loss_threshold = 50000.0
-        mock_result.parameter_means = {"media_retorno": -0.001, "desviacion_retorno": 0.02}
+        mock_result.parameter_means = {"media_retorno": -0.001, "desviacion_retorno": 0.02, "nu": 8.0}
         mock_result.histogram_base64 = "base64encodedstring"
         mock_run.return_value = mock_result
 
@@ -106,7 +106,7 @@ class TestAnalyseEndpoint:
         mock_result.investment_amount = 1000000.0
         mock_result.var_confidence = 0.95
         mock_result.loss_threshold = 50000.0
-        mock_result.parameter_means = {"media_retorno": -0.001, "desviacion_retorno": 0.02}
+        mock_result.parameter_means = {"media_retorno": -0.001, "desviacion_retorno": 0.02, "nu": 8.0}
         mock_result.histogram_base64 = "base64encodedstring"
         mock_run.return_value = mock_result
 
@@ -172,7 +172,7 @@ class TestAnalyseEndpoint:
         mock_result.investment_amount = 1000000.0
         mock_result.var_confidence = 0.95
         mock_result.loss_threshold = 50000.0
-        mock_result.parameter_means = {"media_retorno": -0.001, "desviacion_retorno": 0.02}
+        mock_result.parameter_means = {"media_retorno": -0.001, "desviacion_retorno": 0.02, "nu": 8.0}
         mock_result.histogram_base64 = "base64encodedstring"
         mock_run.return_value = mock_result
 

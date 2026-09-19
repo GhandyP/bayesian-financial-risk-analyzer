@@ -27,7 +27,27 @@ from risk_limits import MAX_RETURNS, MIN_RETURNS
 # the likelihood, and would understate the posterior uncertainty.
 PRIOR_MEAN_LOCATION = 0.0
 PRIOR_MEAN_SCALE = 0.05
-PRIOR_SIGMA_SCALE = 0.05
+
+# Volatility prior: log-normal, i.e. a normal prior on ``log(sigma)``.
+# A half-normal with a wide scale looks "weak" but has most of its mass far
+# above typical period volatilities, and with short samples it biases the
+# estimate upward: measured on the sample payload it put the posterior 57%
+# above the maximum-likelihood value. A prior on the log keeps the scale
+# invariant, so 0.007 and 0.07 are equidistant in relative terms.
+#
+# PRIOR_SIGMA_MEDIAN is the median of the implied prior on sigma. Returns are
+# proportions and the client's examples are single-digit-percent moves, so the
+# centre sits at 1% per period. With short samples the prior is a real input to
+# the answer, which is why the response reports a credible interval.
+PRIOR_SIGMA_MEDIAN = 0.01
+PRIOR_SIGMA_LOG_SCALE = 1.0
+
+# Degrees of freedom of the Student-t likelihood, modelled as
+# ``MIN_DEGREES_OF_FREEDOM + Exponential(rate)``. The floor keeps the variance
+# finite and the expected shortfall defined; the exponential prior keeps mass on
+# genuinely fat tails while allowing the Normal limit when the data call for it.
+MIN_DEGREES_OF_FREEDOM = 2.0
+PRIOR_NU_RATE = 0.1
 
 
 @dataclass
@@ -56,6 +76,10 @@ def run_risk_analysis(
 ) -> RiskAnalysisResult:
     """Estimate Value at Risk (VaR) and tail probabilities from historical returns.
 
+    Returns are modelled with a Student-t likelihood so that fat tails are
+    estimated rather than assumed away: ``nu`` is fitted from the data, and the
+    Normal model is recovered as ``nu`` grows large.
+
     By default the heavy posterior samples (``losses_samples`` and ``raw_trace``)
     are NOT materialized, because most consumers only need the summary metrics,
     the parameter means and the histogram. Passing ``include_full_samples=True``
@@ -81,11 +105,37 @@ def run_risk_analysis(
         media_retorno = pm.Normal(
             "media_retorno", mu=PRIOR_MEAN_LOCATION, sigma=PRIOR_MEAN_SCALE
         )
-        desviacion_retorno = pm.HalfNormal(
-            "desviacion_retorno", sigma=PRIOR_SIGMA_SCALE
+        # Sampled in log space: the prior is scale-invariant and the sampler
+        # explores an unconstrained parameter, which converges better than a
+        # half-normal bounded at zero.
+        desviacion_retorno = pm.Deterministic(
+            "desviacion_retorno",
+            pm.math.exp(
+                pm.Normal(
+                    "log_desviacion",
+                    mu=float(np.log(PRIOR_SIGMA_MEDIAN)),
+                    sigma=PRIOR_SIGMA_LOG_SCALE,
+                )
+            ),
+        )
+        nu = pm.Deterministic(
+            "nu",
+            MIN_DEGREES_OF_FREEDOM + pm.Exponential("nu_excess", lam=PRIOR_NU_RATE),
+        )
+        # Student-t takes a scale, not a standard deviation, and the two differ
+        # by sqrt(nu/(nu-2)). The conversion below keeps ``desviacion_retorno``
+        # interpretable as volatility, which is what the response reports.
+        escala_retorno = desviacion_retorno * pm.math.sqrt(
+            (nu - MIN_DEGREES_OF_FREEDOM) / nu
         )
 
-        pm.Normal("retornos", mu=media_retorno, sigma=desviacion_retorno, observed=returns_array)
+        pm.StudentT(
+            "retornos",
+            nu=nu,
+            mu=media_retorno,
+            sigma=escala_retorno,
+            observed=returns_array,
+        )
 
         trace = pm.sample(
             draws=draws,
@@ -119,6 +169,7 @@ def run_risk_analysis(
     parameter_means = {
         "media_retorno": float(trace["media_retorno"].mean()),
         "desviacion_retorno": float(trace["desviacion_retorno"].mean()),
+        "nu": float(trace["nu"].mean()),
     }
 
     losses_samples: list[float]

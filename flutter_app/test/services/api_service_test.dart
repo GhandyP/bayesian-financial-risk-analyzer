@@ -95,6 +95,7 @@ void main() {
       expect(response.parameterMeans, {
         'media_retorno': -0.001,
         'desviacion_retorno': 0.02,
+        'nu': 8.0,
       });
     });
 

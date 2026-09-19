@@ -33,6 +33,9 @@ class RiskRequest(BaseModel):
 class ParameterMeans(BaseModel):
     media_retorno: float
     desviacion_retorno: float
+    # Degrees of freedom of the fitted Student-t. Small values mean fat tails;
+    # large values approach the Normal model.
+    nu: float
 
 
 class RiskResponse(BaseModel):

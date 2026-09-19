@@ -44,7 +44,7 @@ def build_example_response() -> dict[str, object]:
         investment_amount=1_000_000.0,
         var_confidence=0.95,
         loss_threshold=50_000.0,
-        parameter_means={"media_retorno": -0.001, "desviacion_retorno": 0.02},
+        parameter_means={"media_retorno": -0.001, "desviacion_retorno": 0.02, "nu": 8.0},
         histogram_base64="iVBORw0KGgo=",
     ).model_dump()
 

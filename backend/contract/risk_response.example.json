@@ -6,7 +6,8 @@
   "loss_threshold": 50000.0,
   "parameter_means": {
     "media_retorno": -0.001,
-    "desviacion_retorno": 0.02
+    "desviacion_retorno": 0.02,
+    "nu": 8.0
   },
   "histogram_base64": "iVBORw0KGgo="
 }

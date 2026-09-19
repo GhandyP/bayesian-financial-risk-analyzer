@@ -54,7 +54,7 @@ def _require_real_pymc() -> None:
 
 def test_real_sampling_path_produces_a_finite_positive_var() -> None:
     """The default (cheap) request path must return sane, non-materialized results."""
-    from Analisis_Riesgo_PyMC import run_risk_analysis
+    from Analisis_Riesgo_PyMC import MIN_DEGREES_OF_FREEDOM, run_risk_analysis
 
     result = run_risk_analysis(
         RETURNS, investment_amount=1_000_000.0, loss_threshold=50_000.0, **CHEAP_SAMPLING
@@ -63,8 +63,10 @@ def test_real_sampling_path_produces_a_finite_positive_var() -> None:
     assert math.isfinite(result.var_value)
     assert result.var_value > 0, "a 95% VaR on losses must be a positive amount"
     assert 0.0 <= result.threshold_probability <= 1.0
-    assert set(result.parameter_means) == {"media_retorno", "desviacion_retorno"}
+    assert set(result.parameter_means) == {"media_retorno", "desviacion_retorno", "nu"}
     assert result.parameter_means["desviacion_retorno"] > 0
+    # The floor on the tail index keeps the variance finite.
+    assert result.parameter_means["nu"] > MIN_DEGREES_OF_FREEDOM
 
     # The histogram must be a real, decodable PNG.
     assert result.histogram_base64.startswith(PNG_BASE64_PREFIX)
