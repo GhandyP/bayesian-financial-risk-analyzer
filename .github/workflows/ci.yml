@@ -29,8 +29,8 @@ jobs:
       - name: Run backend tests
         run: pytest -m "not slow" -v
 
-      - name: Run real model smoke tests
-        run: pytest backend/test_model_smoke.py -m slow -v
+      - name: Run real model tests
+        run: pytest -m slow -v
 
   flutter:
     name: Flutter Analyze and Tests
