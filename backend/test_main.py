@@ -1,6 +1,5 @@
 """Tests for FastAPI backend endpoints."""
 
-import asyncio
 import json
 import sys
 from pathlib import Path
@@ -19,9 +18,9 @@ MODEL_DIR = Path(__file__).resolve().parents[1]
 if str(MODEL_DIR) not in sys.path:
     sys.path.insert(0, str(MODEL_DIR))
 
+from Analisis_Riesgo_PyMC import run_risk_analysis
 from backend.main import app
 from backend.models import RiskResponse
-from Analisis_Riesgo_PyMC import run_risk_analysis
 
 client = TestClient(app)
 
@@ -201,7 +200,7 @@ class TestAnalyseEndpoint:
     @patch("backend.main.run_risk_analysis")
     def test_analyse_times_out_to_504(self, mock_run, mock_wait_for) -> None:
         """Inference that exceeds the timeout should surface as HTTP 504."""
-        mock_wait_for.side_effect = asyncio.TimeoutError()
+        mock_wait_for.side_effect = TimeoutError()
         payload = {
             "returns": [-0.01 for _ in range(10)],
             "investment_amount": 1000000,

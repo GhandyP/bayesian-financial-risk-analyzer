@@ -8,7 +8,6 @@ import os
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List
 
 from fastapi import FastAPI, HTTPException
 from fastapi.encoders import jsonable_encoder
@@ -30,10 +29,10 @@ from Analisis_Riesgo_PyMC import run_risk_analysis
 class RuntimeSettings:
     host: str
     port: int
-    cors_origins: List[str]
+    cors_origins: list[str]
 
 
-def _parse_origins(raw_origins: str) -> List[str]:
+def _parse_origins(raw_origins: str) -> list[str]:
     return [origin.strip() for origin in raw_origins.split(",") if origin.strip()]
 
 
@@ -98,8 +97,10 @@ async def analyse(request: RiskRequest) -> RiskResponse:
             asyncio.to_thread(run_risk_analysis, request.returns, investment_amount=request.investment_amount, var_confidence=request.var_confidence, loss_threshold=request.loss_threshold, draws=request.draws, tune=request.tune, target_accept=request.target_accept),
             timeout=120.0
         )
-    except asyncio.TimeoutError:
-        raise HTTPException(status_code=504, detail="Inference timed out")
+    except TimeoutError:
+        # The timeout is expected behaviour, not a programming error, so the
+        # original exception is not chained into the response.
+        raise HTTPException(status_code=504, detail="Inference timed out") from None
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 

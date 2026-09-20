@@ -7,9 +7,11 @@ Single-page Flutter client for risk analysis input + API call + result visualiza
 ```text
 flutter_app/
 ├── lib/main.dart
+├── lib/config/risk_limits.dart
 ├── lib/services/api_service.dart
 ├── lib/utils/parsing_logic.dart
 ├── lib/widgets/
+├── test/services/api_service_test.dart
 ├── test/utils/parsing_logic_test.dart
 ├── test/widgets/returns_input_test.dart
 └── analysis_options.yaml
@@ -20,7 +22,8 @@ flutter_app/
 |------|----------|-------|
 | App entry + page state | `lib/main.dart` | `RiskFormPage` drives submit/loading/error state |
 | HTTP integration | `lib/services/api_service.dart` | Request payload + response decoding |
-| Return parsing rules | `lib/utils/parsing_logic.dart` | Shared parser for comma/newline tokens |
+| Return parsing rules | `lib/utils/parsing_logic.dart` | Shared parser for comma/newline tokens; rejects non-finite values |
+| Request limits mirror | `lib/config/risk_limits.dart` | Mirrors the backend bounds; checked by `backend/test_contract.py` |
 | Input widget behavior | `lib/widgets/returns_input.dart` | Form field + validator text |
 | Result rendering | `lib/widgets/results_card.dart` + `loss_histogram.dart` | Summary + base64 image rendering |
 | Parser tests | `test/utils/parsing_logic_test.dart` | Covers valid/invalid tokenization |
@@ -49,3 +52,5 @@ cd flutter_app && flutter run
 ## NOTES
 - Android emulator requires `10.0.2.2` instead of `localhost` for backend access.
 - Histogram display assumes backend returns valid base64 PNG; decoding failures fall back to text message.
+- `test/services/api_service_test.dart` decodes `../backend/contract/risk_response.example.json`, so `flutter test` must run from `flutter_app/`.
+- Validators reject non-finite numbers explicitly: `double.tryParse` accepts `NaN`, which compares false against every bound.

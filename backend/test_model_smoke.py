@@ -1,0 +1,108 @@
+"""Smoke tests for the real PyMC sampling path.
+
+Unlike ``test_main.py``, these tests run the actual sampler against the pinned
+dependencies: they are the only tests that execute the code path a real request
+takes. They are slow (tens of seconds), so they are marked ``slow`` and excluded
+from the default suite by ``pytest.ini``.
+
+Run them on their own:
+
+    pytest backend/test_model_smoke.py -m slow -v
+
+Keep them in a separate pytest process from ``test_main.py``: that module
+replaces ``pymc`` in ``sys.modules`` with a ``MagicMock``. The guard below fails
+loudly instead of silently passing against that stub.
+"""
+
+from __future__ import annotations
+
+import base64
+import math
+import sys
+import types
+from pathlib import Path
+
+import numpy as np
+import pytest
+
+# Add the repository root to the path for imports (same pattern as test_main.py).
+MODEL_DIR = Path(__file__).resolve().parents[1]
+if str(MODEL_DIR) not in sys.path:
+    sys.path.insert(0, str(MODEL_DIR))
+
+pytestmark = pytest.mark.slow
+
+RETURNS = [-0.012, 0.008, -0.004, 0.01, -0.006, 0.007, -0.003, 0.005, -0.002, 0.004]
+
+# draws/tune sit at the accepted minimum so the smoke run stays cheap.
+CHEAP_SAMPLING = {"draws": 500, "tune": 200}
+
+PNG_BASE64_PREFIX = "iVBORw0KGgo"
+
+
+@pytest.fixture(autouse=True)
+def _require_real_pymc() -> None:
+    """Fail loudly when pymc is a stub rather than silently passing against it."""
+    import pymc as pm
+
+    if not isinstance(pm.sample, types.FunctionType):
+        pytest.fail(
+            "pymc is not the real package (a stub is installed in sys.modules). "
+            "Run this file on its own: pytest backend/test_model_smoke.py -m slow"
+        )
+
+
+def test_real_sampling_path_produces_a_finite_positive_var() -> None:
+    """The default (cheap) request path must return sane, non-materialized results."""
+    from Analisis_Riesgo_PyMC import run_risk_analysis
+
+    result = run_risk_analysis(
+        RETURNS, investment_amount=1_000_000.0, loss_threshold=50_000.0, **CHEAP_SAMPLING
+    )
+
+    assert math.isfinite(result.var_value)
+    assert result.var_value > 0, "a 95% VaR on losses must be a positive amount"
+    assert 0.0 <= result.threshold_probability <= 1.0
+    assert set(result.parameter_means) == {"media_retorno", "desviacion_retorno"}
+    assert result.parameter_means["desviacion_retorno"] > 0
+
+    # The histogram must be a real, decodable PNG.
+    assert result.histogram_base64.startswith(PNG_BASE64_PREFIX)
+    assert base64.b64decode(result.histogram_base64).startswith(b"\x89PNG\r\n\x1a\n")
+
+    # Default behaviour: the heavy arrays are deliberately not materialized.
+    assert result.losses_samples == []
+    assert result.raw_trace == {}
+
+
+def test_reported_metrics_match_the_simulated_samples() -> None:
+    """VaR and the threshold probability must be the statistics of the simulated losses."""
+    from Analisis_Riesgo_PyMC import run_risk_analysis
+
+    confidence = 0.9
+    threshold = 20_000.0
+
+    result = run_risk_analysis(
+        RETURNS,
+        investment_amount=500_000.0,
+        var_confidence=confidence,
+        loss_threshold=threshold,
+        include_full_samples=True,
+        **CHEAP_SAMPLING,
+    )
+
+    losses = np.asarray(result.losses_samples)
+    assert losses.size > 0
+    assert result.var_value == pytest.approx(float(np.percentile(losses, confidence * 100.0)))
+    assert result.threshold_probability == pytest.approx(float(np.mean(losses > threshold)))
+
+    # Opt-in sampling exposes both posterior parameters.
+    assert set(result.raw_trace) == {"media_retorno", "desviacion_retorno"}
+
+    # ``sample_posterior_predictive`` returns one predictive draw per posterior
+    # sample *and* observed data point, so the flattened loss array holds
+    # chains * draws * len(RETURNS) values. The observed points are iid draws of
+    # the same Normal, so the simulated loss distribution is right, while the
+    # number of independent samples is the posterior size.
+    posterior_size = len(result.raw_trace["media_retorno"])
+    assert losses.size == posterior_size * len(RETURNS)

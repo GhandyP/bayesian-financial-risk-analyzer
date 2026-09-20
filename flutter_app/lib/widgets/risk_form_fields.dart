@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../config/risk_limits.dart';
 
 class RiskFormFields extends StatelessWidget {
   const RiskFormFields({
@@ -27,12 +28,13 @@ class RiskFormFields extends StatelessWidget {
             Expanded(
                 child: _buildDoubleField(
                     'Monto invertido', investmentController,
-                    min: 1)),
+                    minExclusive: RiskLimits.investmentMinExclusive)),
             const SizedBox(width: 12),
             Expanded(
                 child: _buildDoubleField(
                     'VaR (confianza)', varConfidenceController,
-                    min: 0.8, max: 0.999)),
+                    min: RiskLimits.varConfidenceMin,
+                    maxExclusive: RiskLimits.varConfidenceMaxExclusive)),
           ],
         ),
         const SizedBox(height: 12),
@@ -41,12 +43,12 @@ class RiskFormFields extends StatelessWidget {
             Expanded(
                 child: _buildDoubleField(
                     'Umbral de perdida', thresholdController,
-                    min: 0)),
+                    min: RiskLimits.lossThresholdMin)),
             const SizedBox(width: 12),
             Expanded(
                 child: _buildIntegerField(
                     'Iteraciones (draws)', drawsController,
-                    min: 500)),
+                    min: RiskLimits.drawsMin, max: RiskLimits.drawsMax)),
           ],
         ),
         const SizedBox(height: 12),
@@ -55,12 +57,13 @@ class RiskFormFields extends StatelessWidget {
             Expanded(
                 child: _buildIntegerField(
                     'Calentamiento (tune)', tuneController,
-                    min: 200)),
+                    min: RiskLimits.tuneMin, max: RiskLimits.tuneMax)),
             const SizedBox(width: 12),
             Expanded(
                 child: _buildDoubleField(
                     'Target accept', targetAcceptController,
-                    min: 0.5, max: 0.99)),
+                    min: RiskLimits.targetAcceptMin,
+                    max: RiskLimits.targetAcceptMax)),
           ],
         ),
       ],
@@ -93,8 +96,10 @@ class RiskFormFields extends StatelessWidget {
     );
   }
 
+  /// Bounds mirror the backend constraints, including the strict ones: a value
+  /// equal to an exclusive bound must be rejected here, not by the API.
   Widget _buildDoubleField(String label, TextEditingController controller,
-      {double? min, double? max}) {
+      {double? min, double? minExclusive, double? max, double? maxExclusive}) {
     return TextFormField(
       controller: controller,
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
@@ -108,11 +113,22 @@ class RiskFormFields extends StatelessWidget {
         if (parsed == null) {
           return 'Debe ser un numero';
         }
+        // NaN compares false against every bound below, so it must be rejected
+        // explicitly or it would slip through to the request payload.
+        if (!parsed.isFinite) {
+          return 'Debe ser un numero finito';
+        }
         if (min != null && parsed < min) {
           return 'Minimo $min';
         }
+        if (minExclusive != null && parsed <= minExclusive) {
+          return 'Debe ser mayor a $minExclusive';
+        }
         if (max != null && parsed > max) {
           return 'Maximo $max';
+        }
+        if (maxExclusive != null && parsed >= maxExclusive) {
+          return 'Debe ser menor a $maxExclusive';
         }
         return null;
       },

@@ -3,19 +3,14 @@
 from __future__ import annotations
 
 import math
-from typing import List
 
 from pydantic import BaseModel, Field, field_validator
 
-# Upper bound for the number of historical returns accepted per request. The
-# Bayesian model is compute-heavy, and a 2000-point series is well beyond what
-# the VaR estimation needs while still keeping the request body small. A
-# tighter cap also bounds sampling time on oversized payloads.
-MAX_RETURNS = 2000
+from risk_limits import MAX_RETURNS, MIN_RETURNS
 
 
 class RiskRequest(BaseModel):
-    returns: List[float]
+    returns: list[float]
     investment_amount: float = Field(1_000_000.0, gt=0)
     var_confidence: float = Field(0.95, ge=0.8, lt=1.0)
     loss_threshold: float = Field(50_000.0, ge=0)
@@ -25,9 +20,9 @@ class RiskRequest(BaseModel):
 
     @field_validator("returns")
     @classmethod
-    def _validate_returns(cls, value: List[float]) -> List[float]:
-        if len(value) < 10:
-            raise ValueError("Debe proporcionar al menos 10 retornos historicos.")
+    def _validate_returns(cls, value: list[float]) -> list[float]:
+        if len(value) < MIN_RETURNS:
+            raise ValueError(f"Debe proporcionar al menos {MIN_RETURNS} retornos historicos.")
         if len(value) > MAX_RETURNS:
             raise ValueError(f"El numero maximo de retornos es {MAX_RETURNS}.")
         if any(not math.isfinite(item) for item in value):

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../config/risk_limits.dart';
 import '../utils/parsing_logic.dart';
 
 class ReturnsInputWidget extends StatelessWidget {
@@ -34,8 +35,11 @@ class ReturnsInputWidget extends StatelessWidget {
             }
             try {
               final returns = parseReturns(value);
-              if (returns.length < 10) {
-                return 'Se requieren al menos 10 retornos.';
+              if (returns.length < RiskLimits.returnsMinCount) {
+                return 'Se requieren al menos ${RiskLimits.returnsMinCount} retornos.';
+              }
+              if (returns.length > RiskLimits.returnsMaxCount) {
+                return 'El maximo es ${RiskLimits.returnsMaxCount} retornos.';
               }
             } catch (error) {
               return error.toString();

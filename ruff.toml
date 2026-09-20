@@ -1,0 +1,21 @@
+# Shared lint configuration for local runs and CI.
+#
+# `ruff==0.16.7` is pinned in backend/requirements.txt; the rule set is explicit
+# so a new ruff release cannot silently widen it.
+
+target-version = "py311"
+line-length = 120
+
+[lint]
+# E4/E7/E9/F are ruff's defaults; I and UP keep imports and annotations modern,
+# B catches likely bugs. E501 is deliberately excluded: the project does not
+# enforce a hard line width.
+select = ["E4", "E7", "E9", "F", "I", "UP", "B"]
+
+[lint.per-file-ignores]
+# These modules append the repository root to sys.path before importing the
+# model helper, so their imports deliberately follow a statement (E402).
+# Removing the ignore means packaging the model instead of path mutation.
+"backend/main.py" = ["E402"]
+"backend/test_main.py" = ["E402"]
+"backend/test_contract.py" = ["E402"]

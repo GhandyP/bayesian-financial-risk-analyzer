@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import base64
 import io
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
-from typing import Iterable, Mapping, Sequence
 
 import matplotlib
 
@@ -15,9 +15,7 @@ import numpy as np
 import pandas as pd
 import pymc as pm
 
-
-# Bound the input before allocating model and posterior predictive work.
-MAX_RETURNS = 2000
+from risk_limits import MAX_RETURNS, MIN_RETURNS
 
 
 @dataclass
@@ -62,12 +60,12 @@ def run_risk_analysis(
     returns_array = _coerce_returns(returns)
     if not np.isfinite(returns_array).all():
         raise ValueError("Los retornos no pueden contener NaN o infinito.")
-    if returns_array.size < 10:
-        raise ValueError("Se requieren al menos 10 retornos historicos.")
+    if returns_array.size < MIN_RETURNS:
+        raise ValueError(f"Se requieren al menos {MIN_RETURNS} retornos historicos.")
     if returns_array.size > MAX_RETURNS:
         raise ValueError(f"El numero maximo de retornos es {MAX_RETURNS}.")
 
-    with pm.Model() as model:
+    with pm.Model():
         media_retorno = pm.Normal(
             "media_retorno", mu=float(returns_array.mean()), sigma=max(float(returns_array.std()), 0.01)
         )
@@ -85,9 +83,14 @@ def run_risk_analysis(
             return_inferencedata=False,
         )
 
-        predictive = pm.sample_posterior_predictive(trace, samples=5_000, progressbar=False)
+        # PyMC 5 no longer accepts a sample count here: the size of the predictive
+        # draw set is taken from the posterior trace, so it scales with ``draws``
+        # (times the number of chains). Do not reintroduce ``samples=``/``draws=``.
+        predictive = pm.sample_posterior_predictive(trace, progressbar=False)
 
-    simulated_returns = predictive["retornos"].ravel()
+    # ``sample_posterior_predictive`` returns an InferenceData group by default in
+    # PyMC 5; read the predictive draws from that group instead of a plain dict.
+    simulated_returns = predictive.posterior_predictive["retornos"].to_numpy().ravel()
     simulated_losses = -simulated_returns * investment_amount
 
     var_percentile = var_confidence * 100.0

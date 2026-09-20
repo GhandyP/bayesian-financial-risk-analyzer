@@ -101,12 +101,27 @@ The default is `http://127.0.0.1:8000`. Android emulators generally need `10.0.2
 ## Verification
 
 ```bash
-python -m pytest backend/test_main.py -v
+# Fast suite: API, contract and lint checks
+python -m pip install --requirement backend/requirements.txt
+python -m ruff check .
+python -m pytest -m "not slow" -v
+
+# Real model run: executes PyMC instead of stubbing it (~25s)
+python -m pytest backend/test_model_smoke.py -m slow -v
+
 cd flutter_app && flutter analyze
 cd flutter_app && flutter test
 ```
 
-The backend tests mock the expensive PyMC and Matplotlib integrations for API contract checks, and cover the 400 (model error) and 504 (timeout) branches. The model still performs defensive validation before sampling, including finite values and the 2000-return upper bound. Flutter tests cover parsing, the input/result widgets and the API service with a mocked HTTP client.
+The backend tests mock the expensive PyMC and Matplotlib integrations for API contract checks, and cover the 400 (model error) and 504 (timeout) branches. `backend/test_model_smoke.py` is the only suite that runs the real sampler, so it is excluded from the default run through the `slow` marker in `pytest.ini` and must be invoked on its own: `test_main.py` installs a `pymc` stub in `sys.modules`.
+
+`backend/test_contract.py` links the two hand-written sides of the contract. It regenerates the response example that the Dart suite decodes and compares the Flutter limit constants (`lib/config/risk_limits.dart`) against the Pydantic constraints, so a renamed field or a one-sided bound change fails in CI instead of at runtime. After an intended schema change, regenerate the example:
+
+```bash
+python -m backend.test_contract
+```
+
+Flutter tests cover parsing, the input/result widgets and the API service with a mocked HTTP client.
 
 ## Troubleshooting
 

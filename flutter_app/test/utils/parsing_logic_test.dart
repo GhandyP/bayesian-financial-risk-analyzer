@@ -22,5 +22,16 @@ void main() {
     test('parseReturns throws FormatException on invalid number', () {
       expect(() => parseReturns('0.1, abc'), throwsFormatException);
     });
+
+    // double.tryParse accepts these spellings; the backend rejects them.
+    test('parseReturns throws FormatException on NaN and Infinity', () {
+      expect(() => parseReturns('0.1, NaN'), throwsFormatException);
+      expect(() => parseReturns('0.1, Infinity'), throwsFormatException);
+      expect(() => parseReturns('0.1, -Infinity'), throwsFormatException);
+    });
+
+    test('parseReturns accepts semicolons and mixed whitespace', () {
+      expect(parseReturns('0.1;0.2\t-0.3'), [0.1, 0.2, -0.3]);
+    });
   });
 }
