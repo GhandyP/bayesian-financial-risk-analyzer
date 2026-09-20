@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import pymc as pm
+import scipy.stats as st
 
 from risk_limits import MAX_RETURNS, MIN_RETURNS
 
@@ -67,6 +68,11 @@ MAX_DIVERGENCES = 0
 # number for the same input.
 SAMPLING_SEED = 20260101
 
+# Percentiles of the posterior distribution of the VaR reported as its credible
+# interval. The VaR is a function of the parameters, so it has a posterior of its
+# own: this is parameter uncertainty, not Monte Carlo noise.
+VAR_CREDIBLE_INTERVAL_PERCENTILES = (5.0, 95.0)
+
 
 class ConvergenceError(RuntimeError):
     """Raised when the posterior did not converge well enough to be reported."""
@@ -75,6 +81,9 @@ class ConvergenceError(RuntimeError):
 @dataclass
 class RiskAnalysisResult:
     var_value: float
+    var_value_lower: float
+    var_value_upper: float
+    expected_shortfall: float
     threshold_probability: float
     investment_amount: float
     var_confidence: float
@@ -172,22 +181,34 @@ def run_risk_analysis(
             progressbar=False,
         )
 
-        # PyMC 5 no longer accepts a sample count here: the size of the predictive
-        # draw set is taken from the posterior trace, so it scales with ``draws``
-        # (times the number of chains). Do not reintroduce ``samples=``/``draws=``.
-        predictive = pm.sample_posterior_predictive(trace, progressbar=False)
-
     diagnostics = _convergence_diagnostics(trace)
     _require_convergence(diagnostics)
 
-    # ``sample_posterior_predictive`` returns an InferenceData group by default in
-    # PyMC 5; read the predictive draws from that group instead of a plain dict.
-    simulated_returns = predictive.posterior_predictive["retornos"].to_numpy().ravel()
+    # One predictive return per posterior sample, drawn from the fitted
+    # Student-t. Sampling the observed variable instead returns one draw per
+    # (posterior sample, historical observation) pair, which pads the sample count
+    # with copies of the same points and understates the Monte Carlo error.
+    simulated_returns = _simulate_returns(trace, np.random.default_rng(SAMPLING_SEED))
     simulated_losses = -simulated_returns * investment_amount
 
-    var_percentile = var_confidence * 100.0
-    var_value = float(np.percentile(simulated_losses, var_percentile))
-    threshold_probability = float(np.mean(simulated_losses > loss_threshold))
+    # The reported measures are analytic functions of each posterior draw rather
+    # than percentiles of the simulated losses: the tail statistics of a
+    # Student-t have closed forms, so the 95% VaR no longer rests on the 5% of the
+    # simulated draws that happen to fall beyond it.
+    var_draws, shortfall_draws = _var_and_shortfall(
+        trace, var_confidence, investment_amount
+    )
+    var_value = float(np.mean(var_draws))
+    var_value_lower = float(
+        np.percentile(var_draws, VAR_CREDIBLE_INTERVAL_PERCENTILES[0])
+    )
+    var_value_upper = float(
+        np.percentile(var_draws, VAR_CREDIBLE_INTERVAL_PERCENTILES[1])
+    )
+    expected_shortfall = float(np.mean(shortfall_draws))
+    threshold_probability = _threshold_probability(
+        trace, loss_threshold / investment_amount
+    )
 
     histogram_base64 = _encode_histogram(
         simulated_losses,
@@ -219,6 +240,9 @@ def run_risk_analysis(
 
     return RiskAnalysisResult(
         var_value=var_value,
+        var_value_lower=var_value_lower,
+        var_value_upper=var_value_upper,
+        expected_shortfall=expected_shortfall,
         threshold_probability=threshold_probability,
         investment_amount=float(investment_amount),
         var_confidence=float(var_confidence),
@@ -245,6 +269,60 @@ def _coerce_returns(
         raise ValueError("Los retornos deben ser una secuencia unidimensional.")
 
     return array
+
+
+def _posterior_parameters(
+    trace: az.InferenceData,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Flat posterior draws of (mean, standard deviation, tail index)."""
+    posterior = trace.posterior
+    return (
+        posterior["media_retorno"].to_numpy().ravel(),
+        posterior["desviacion_retorno"].to_numpy().ravel(),
+        posterior["nu"].to_numpy().ravel(),
+    )
+
+
+def _t_scale(desviacion: np.ndarray, nu: np.ndarray) -> np.ndarray:
+    """Student-t scale for which ``desviacion`` is the standard deviation."""
+    return desviacion * np.sqrt((nu - MIN_DEGREES_OF_FREEDOM) / nu)
+
+
+def _simulate_returns(
+    trace: az.InferenceData, rng: np.random.Generator
+) -> np.ndarray:
+    """Draw one new return per posterior sample from the fitted Student-t."""
+    media, desviacion, nu = _posterior_parameters(trace)
+    return media + _t_scale(desviacion, nu) * rng.standard_t(nu)
+
+
+def _var_and_shortfall(
+    trace: az.InferenceData, confidence: float, investment_amount: float
+) -> tuple[np.ndarray, np.ndarray]:
+    """Analytic VaR and expected shortfall, in currency, for every draw.
+
+    Both are computed per posterior sample and returned as arrays so the caller
+    can report the VaR posterior itself. ``nu > 2`` keeps the variance finite and
+    the tail mean below finite, so neither quantity can blow up.
+    """
+    media, desviacion, nu = _posterior_parameters(trace)
+    scale = _t_scale(desviacion, nu)
+    alpha = 1.0 - confidence
+    quantile = st.t.ppf(alpha, nu)
+    density = st.t.pdf(quantile, nu)
+    # E[T | T <= q] for a standard Student-t at its alpha quantile q.
+    tail_mean = -density * (nu + quantile**2) / ((nu - 1.0) * alpha)
+    var_loss = -(media + scale * quantile) * investment_amount
+    shortfall_loss = -(media + scale * tail_mean) * investment_amount
+    return var_loss, shortfall_loss
+
+
+def _threshold_probability(trace: az.InferenceData, threshold_return: float) -> float:
+    """Posterior mean of P(loss > threshold), evaluated analytically per draw."""
+    media, desviacion, nu = _posterior_parameters(trace)
+    scale = _t_scale(desviacion, nu)
+    per_draw = st.t.cdf((-threshold_return - media) / scale, nu)
+    return float(np.mean(per_draw))
 
 
 def _convergence_diagnostics(trace: az.InferenceData) -> dict[str, float | int | bool]:

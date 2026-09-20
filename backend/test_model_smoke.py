@@ -78,7 +78,7 @@ def test_real_sampling_path_produces_a_finite_positive_var() -> None:
 
 
 def test_reported_metrics_match_the_simulated_samples() -> None:
-    """VaR and the threshold probability must be the statistics of the simulated losses."""
+    """The analytic measures must agree with the simulated loss distribution."""
     from Analisis_Riesgo_PyMC import run_risk_analysis
 
     confidence = 0.9
@@ -95,16 +95,28 @@ def test_reported_metrics_match_the_simulated_samples() -> None:
 
     losses = np.asarray(result.losses_samples)
     assert losses.size > 0
-    assert result.var_value == pytest.approx(float(np.percentile(losses, confidence * 100.0)))
-    assert result.threshold_probability == pytest.approx(float(np.mean(losses > threshold)))
+
+    # The reported measures come from closed-form per-draw formulas rather than
+    # from the simulation, so these are cross-checks between two independent
+    # estimators of the same quantity, not equalities.
+    empirical_var = float(np.percentile(losses, confidence * 100.0))
+    assert result.var_value == pytest.approx(empirical_var, rel=0.15)
+
+    empirical_threshold_probability = float(np.mean(losses > threshold))
+    assert result.threshold_probability == pytest.approx(
+        empirical_threshold_probability, abs=0.002
+    )
+
+    # Expected shortfall is the mean loss beyond the VaR, so it is always the
+    # larger of the two, and the credible interval must bracket the estimate.
+    assert result.expected_shortfall > result.var_value > 0
+    assert result.var_value_lower < result.var_value < result.var_value_upper
 
     # Opt-in sampling exposes both posterior parameters.
     assert set(result.raw_trace) == {"media_retorno", "desviacion_retorno"}
 
-    # ``sample_posterior_predictive`` returns one predictive draw per posterior
-    # sample *and* observed data point, so the flattened loss array holds
-    # chains * draws * len(RETURNS) values. The observed points are iid draws of
-    # the same Normal, so the simulated loss distribution is right, while the
-    # number of independent samples is the posterior size.
+    # One predictive return is drawn per posterior sample, so the loss array is
+    # exactly as long as the posterior: no padding from repeating the historical
+    # observations.
     posterior_size = len(result.raw_trace["media_retorno"])
-    assert losses.size == posterior_size * len(RETURNS)
+    assert losses.size == posterior_size
