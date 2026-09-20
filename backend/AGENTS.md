@@ -25,6 +25,7 @@ backend/
 | API routes | `main.py` `analyse` route | Bridges request to model; 400 on ValueError, 504 on timeout |
 | Endpoint tests | `test_main.py` | Uses `TestClient`, patches `run_risk_analysis` |
 | Real model tests | `test_model_smoke.py` | `slow`-marked; real PyMC run, own pytest process |
+| Coverage backtest | `test_coverage_backtest.py` | `slow`-marked; one fit per window scored on later returns |
 | Contract tests | `test_contract.py` | Regenerates the Dart fixture; checks Dart limits against Pydantic |
 | Response example | `contract/risk_response.example.json` | Generated; decoded by the Dart suite |
 | Dependency policy | `requirements.txt` | Versions pinned; keep deterministic |
@@ -38,6 +39,7 @@ backend/
 - Restoring `allow_origins=["*"]`.
 - Adding unbounded PyMC run parameters beyond current validated ranges.
 - Writing tests that require live PyMC dependency for basic route behavior.
+- Widening the convergence thresholds so a request passes, or reporting a number when the posterior failed the gate.
 - Returning `losses_samples` or `raw_trace` from API route (payload bloat risk).
 
 ## COMMANDS
@@ -45,7 +47,7 @@ backend/
 python -m pip install --requirement backend/requirements.txt
 python -m ruff check .
 python -m pytest -m "not slow" -v
-python -m pytest backend/test_model_smoke.py -m slow -v
+python -m pytest -m slow -v
 python -m backend.test_contract
 python -m backend.main
 ```
@@ -55,3 +57,5 @@ python -m backend.main
 - Because of that stub, `test_model_smoke.py` must never run in the same pytest process: it guards against a mocked `pymc` and fails loudly.
 - `run_risk_analysis` stops materializing full posterior samples by default; pass `include_full_samples=True` only when a caller needs the raw arrays.
 - Request bounds live in `risk_limits.py`, not in `models.py`, so the Pydantic layer stays free of the PyMC import.
+- The route maps `ConvergenceError` to HTTP 500: a posterior that fails the gate (`rhat <= 1.01`, ESS >= 400, divergences <= 0.5% of draws) must not reach the client as a result. Divergences are judged as a rate because the count varies between environments for the same seed.
+- Sampling with the API defaults takes roughly 45-75 seconds per request, against a 120-second timeout. `draws=500` is accepted by validation but does not converge on fat-tailed data.

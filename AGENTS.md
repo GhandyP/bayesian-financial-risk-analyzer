@@ -31,7 +31,8 @@ Risk analysis project: Bayesian PyMC model + FastAPI API + Flutter UI. Small rep
 | API contracts/validation | `backend/models.py` | Pydantic request/response models |
 | API routes/config | `backend/main.py` | FastAPI routes, CORS, runtime settings |
 | Backend tests | `backend/test_main.py` | Uses `TestClient`; model call patched |
-| Real model smoke tests | `backend/test_model_smoke.py` | `slow`-marked; the only suite that runs PyMC for real |
+| Real model smoke tests | `backend/test_model_smoke.py` | `slow`-marked; runs PyMC for real, own pytest process |
+| Coverage backtest | `backend/test_coverage_backtest.py` | `slow`-marked; out-of-sample VaR coverage on synthetic fat tails |
 | Cross-language contract | `backend/test_contract.py` | Response example freshness + Dart limits vs Pydantic bounds |
 | Shared request limits | `risk_limits.py` | Single source for `MIN_RETURNS`/`MAX_RETURNS`, Pydantic-safe (no PyMC import) |
 | Flutter page flow | `flutter_app/lib/main.dart` | Entry widget + submission state |
@@ -71,7 +72,7 @@ Risk analysis project: Bayesian PyMC model + FastAPI API + Flutter UI. Small rep
 python -m pip install --requirement backend/requirements.txt
 python -m ruff check .
 python -m pytest -m "not slow" -v
-python -m pytest backend/test_model_smoke.py -m slow -v
+python -m pytest -m slow -v
 python -m backend.main
 
 cd flutter_app && flutter pub get
@@ -85,3 +86,5 @@ cd flutter_app && flutter run
 - Model execution can be expensive; API tests should patch model call unless explicitly profiling.
 - The model path has a real smoke test; it must run in its own pytest process because `test_main.py` stubs `pymc`.
 - Request limits are mirrored in `flutter_app/lib/config/risk_limits.dart` and compared by `backend/test_contract.py`; change both sides together.
+- The model fits a Student-t with `nu` estimated from the data, weak data-independent priors, analytic VaR/ES with a credible interval and a convergence gate that returns HTTP 500 rather than a number; README documents the assumptions and the explicit non-goals.
+- `pytest -m slow` costs about six minutes: it fits real posteriors on four chains, and the API defaults (2000 draws) are the minimum that converges on fat-tailed data.
