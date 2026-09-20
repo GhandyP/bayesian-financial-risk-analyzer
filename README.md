@@ -157,8 +157,9 @@ python -m pip install --requirement backend/requirements.txt
 python -m ruff check .
 python -m pytest -m "not slow" -v
 
-# Real model runs: execute PyMC instead of stubbing it (~6 min total)
-python -m pytest -m slow -v
+# Real model runs: execute PyMC instead of stubbing it (~6 min total).
+# test_main.py installs a pymc stub in sys.modules, so it must be excluded here.
+python -m pytest -m slow --ignore=backend/test_main.py -v
 
 cd flutter_app && flutter analyze
 cd flutter_app && flutter test

@@ -72,7 +72,7 @@ Risk analysis project: Bayesian PyMC model + FastAPI API + Flutter UI. Small rep
 python -m pip install --requirement backend/requirements.txt
 python -m ruff check .
 python -m pytest -m "not slow" -v
-python -m pytest -m slow -v
+python -m pytest -m slow --ignore=backend/test_main.py -v
 python -m backend.main
 
 cd flutter_app && flutter pub get
@@ -87,4 +87,4 @@ cd flutter_app && flutter run
 - The model path has a real smoke test; it must run in its own pytest process because `test_main.py` stubs `pymc`.
 - Request limits are mirrored in `flutter_app/lib/config/risk_limits.dart` and compared by `backend/test_contract.py`; change both sides together.
 - The model fits a Student-t with `nu` estimated from the data, weak data-independent priors, analytic VaR/ES with a credible interval and a convergence gate that returns HTTP 500 rather than a number; README documents the assumptions and the explicit non-goals.
-- `pytest -m slow` costs about six minutes: it fits real posteriors on four chains, and the API defaults (2000 draws) are the minimum that converges on fat-tailed data.
+- `pytest -m slow --ignore=backend/test_main.py` costs about six minutes: it fits real posteriors on four chains, and the API defaults (2000 draws) are the minimum that converges on fat-tailed data. The `--ignore` is mandatory: without it, collection imports `test_main.py`, whose `pymc` stub makes the slow files fail their real-package guard.

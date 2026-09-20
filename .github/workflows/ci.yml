@@ -30,7 +30,7 @@ jobs:
         run: pytest -m "not slow" -v
 
       - name: Run real model tests
-        run: pytest -m slow -v
+        run: pytest -m slow --ignore=backend/test_main.py -v
 
   flutter:
     name: Flutter Analyze and Tests

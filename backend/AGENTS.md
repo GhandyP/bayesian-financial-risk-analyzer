@@ -47,14 +47,14 @@ backend/
 python -m pip install --requirement backend/requirements.txt
 python -m ruff check .
 python -m pytest -m "not slow" -v
-python -m pytest -m slow -v
+python -m pytest -m slow --ignore=backend/test_main.py -v
 python -m backend.test_contract
 python -m backend.main
 ```
 
 ## NOTES
 - `test_main.py` stubs `pymc`/`matplotlib` modules before importing app; keep this for lightweight CI.
-- Because of that stub, `test_model_smoke.py` must never run in the same pytest process: it guards against a mocked `pymc` and fails loudly.
+- Because of that stub, the slow files must never run in the same pytest process: they guard against a mocked `pymc` and fail loudly, so the slow command always excludes `test_main.py` with `--ignore`.
 - `run_risk_analysis` stops materializing full posterior samples by default; pass `include_full_samples=True` only when a caller needs the raw arrays.
 - Request bounds live in `risk_limits.py`, not in `models.py`, so the Pydantic layer stays free of the PyMC import.
 - The route maps `ConvergenceError` to HTTP 500: a posterior that fails the gate (`rhat <= 1.01`, ESS >= 400, divergences <= 0.5% of draws) must not reach the client as a result. Divergences are judged as a rate because the count varies between environments for the same seed.
