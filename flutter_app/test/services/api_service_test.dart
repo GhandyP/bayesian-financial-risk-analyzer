@@ -21,6 +21,9 @@ void main() {
         return http.Response(
           jsonEncode({
             'var_value': 50000.0,
+            'var_value_lower': 40000.0,
+            'var_value_upper': 70000.0,
+            'expected_shortfall': 65000.0,
             'threshold_probability': 0.05,
             'investment_amount': 1000000.0,
             'var_confidence': 0.95,
@@ -30,6 +33,12 @@ void main() {
               'desviacion_retorno': 0.02,
             },
             'histogram_base64': 'abc123',
+            'diagnostics': {
+              'max_rhat': 1.003,
+              'min_ess': 4290.0,
+              'divergences': 0,
+              'converged': true,
+            },
           }),
           200,
           headers: {'content-type': 'application/json'},
@@ -92,9 +101,15 @@ void main() {
 
       expect(response.varValue, 50000.0);
       expect(response.thresholdProbability, 0.05);
+      expect(response.expectedShortfall, 65000.0);
+      expect(response.varValueLower, 40000.0);
+      expect(response.varValueUpper, 70000.0);
+      expect(response.diagnostics.maxRhat, 1.003);
+      expect(response.diagnostics.converged, isTrue);
       expect(response.parameterMeans, {
         'media_retorno': -0.001,
         'desviacion_retorno': 0.02,
+        'nu': 8.0,
       });
     });
 

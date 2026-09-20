@@ -44,8 +44,17 @@ def build_example_response() -> dict[str, object]:
         investment_amount=1_000_000.0,
         var_confidence=0.95,
         loss_threshold=50_000.0,
-        parameter_means={"media_retorno": -0.001, "desviacion_retorno": 0.02},
+        expected_shortfall=65_000.0,
+        var_value_lower=40_000.0,
+        var_value_upper=70_000.0,
+        parameter_means={"media_retorno": -0.001, "desviacion_retorno": 0.02, "nu": 8.0},
         histogram_base64="iVBORw0KGgo=",
+        diagnostics={
+            "max_rhat": 1.003,
+            "min_ess": 4290.0,
+            "divergences": 0,
+            "converged": True,
+        },
     ).model_dump()
 
 

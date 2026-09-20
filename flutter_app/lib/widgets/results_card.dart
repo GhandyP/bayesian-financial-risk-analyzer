@@ -13,6 +13,8 @@ class ResultsCard extends StatelessWidget {
         _buildSummaryCard(context, response),
         const SizedBox(height: 16),
         _buildParametersCard(context, response),
+        const SizedBox(height: 16),
+        _buildDiagnosticsCard(context, response),
       ],
     );
   }
@@ -31,6 +33,12 @@ class ResultsCard extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
                 'VaR ${response.varConfidence.toStringAsFixed(2)}: ${response.varValue.toStringAsFixed(0)}'),
+            Text(
+                'VaR intervalo 90%: ${response.varValueLower.toStringAsFixed(0)} '
+                '- ${response.varValueUpper.toStringAsFixed(0)}'),
+            Text(
+                'ES ${response.varConfidence.toStringAsFixed(2)}: '
+                '${response.expectedShortfall.toStringAsFixed(0)}'),
             Text(
                 'Prob. perdida >= ${response.lossThreshold.toStringAsFixed(0)}: '
                 '${(response.thresholdProbability * 100).toStringAsFixed(2)} %'),
@@ -56,6 +64,28 @@ class ResultsCard extends StatelessWidget {
             const SizedBox(height: 8),
             for (final entry in response.parameterMeans.entries)
               Text('${entry.key}: ${entry.value.toStringAsFixed(5)}'),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDiagnosticsCard(BuildContext context, RiskResponse response) {
+    final textTheme = Theme.of(context).textTheme;
+    final diagnostics = response.diagnostics;
+    return Card(
+      elevation: 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Calidad del muestreo', style: textTheme.titleMedium),
+            const SizedBox(height: 8),
+            Text('rhat ${diagnostics.maxRhat.toStringAsFixed(3)} | '
+                'ESS ${diagnostics.minEss.toStringAsFixed(0)} | '
+                'divergencias ${diagnostics.divergences}'),
           ],
         ),
       ),

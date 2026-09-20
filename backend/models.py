@@ -33,13 +33,29 @@ class RiskRequest(BaseModel):
 class ParameterMeans(BaseModel):
     media_retorno: float
     desviacion_retorno: float
+    # Degrees of freedom of the fitted Student-t. Small values mean fat tails;
+    # large values approach the Normal model.
+    nu: float
+
+
+class ConvergenceDiagnostics(BaseModel):
+    """MCMC health of the posterior behind the reported measures."""
+
+    max_rhat: float
+    min_ess: float
+    divergences: int
+    converged: bool
 
 
 class RiskResponse(BaseModel):
     var_value: float
+    var_value_lower: float
+    var_value_upper: float
+    expected_shortfall: float
     threshold_probability: float
     investment_amount: float
     var_confidence: float
     loss_threshold: float
     parameter_means: ParameterMeans
     histogram_base64: str
+    diagnostics: ConvergenceDiagnostics

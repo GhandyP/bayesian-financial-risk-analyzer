@@ -12,13 +12,14 @@ from fastapi.testclient import TestClient
 sys.modules["pymc"] = MagicMock()
 sys.modules["matplotlib"] = MagicMock()
 sys.modules["matplotlib.pyplot"] = MagicMock()
+sys.modules["arviz"] = MagicMock()
 
 # Add parent directory to path for imports
 MODEL_DIR = Path(__file__).resolve().parents[1]
 if str(MODEL_DIR) not in sys.path:
     sys.path.insert(0, str(MODEL_DIR))
 
-from Analisis_Riesgo_PyMC import run_risk_analysis
+from Analisis_Riesgo_PyMC import ConvergenceError, run_risk_analysis
 from backend.main import app
 from backend.models import RiskResponse
 
@@ -47,8 +48,17 @@ class TestAnalyseEndpoint:
         mock_result.investment_amount = 1000000.0
         mock_result.var_confidence = 0.95
         mock_result.loss_threshold = 50000.0
-        mock_result.parameter_means = {"media_retorno": -0.001, "desviacion_retorno": 0.02}
+        mock_result.parameter_means = {"media_retorno": -0.001, "desviacion_retorno": 0.02, "nu": 8.0}
         mock_result.histogram_base64 = "base64encodedstring"
+        mock_result.expected_shortfall = 65000.0
+        mock_result.var_value_lower = 40000.0
+        mock_result.var_value_upper = 70000.0
+        mock_result.diagnostics = {
+            "max_rhat": 1.003,
+            "min_ess": 4290.0,
+            "divergences": 0,
+            "converged": True,
+        }
         mock_run.return_value = mock_result
 
         payload = {
@@ -106,8 +116,17 @@ class TestAnalyseEndpoint:
         mock_result.investment_amount = 1000000.0
         mock_result.var_confidence = 0.95
         mock_result.loss_threshold = 50000.0
-        mock_result.parameter_means = {"media_retorno": -0.001, "desviacion_retorno": 0.02}
+        mock_result.parameter_means = {"media_retorno": -0.001, "desviacion_retorno": 0.02, "nu": 8.0}
         mock_result.histogram_base64 = "base64encodedstring"
+        mock_result.expected_shortfall = 65000.0
+        mock_result.var_value_lower = 40000.0
+        mock_result.var_value_upper = 70000.0
+        mock_result.diagnostics = {
+            "max_rhat": 1.003,
+            "min_ess": 4290.0,
+            "divergences": 0,
+            "converged": True,
+        }
         mock_run.return_value = mock_result
 
         payload = {
@@ -172,8 +191,17 @@ class TestAnalyseEndpoint:
         mock_result.investment_amount = 1000000.0
         mock_result.var_confidence = 0.95
         mock_result.loss_threshold = 50000.0
-        mock_result.parameter_means = {"media_retorno": -0.001, "desviacion_retorno": 0.02}
+        mock_result.parameter_means = {"media_retorno": -0.001, "desviacion_retorno": 0.02, "nu": 8.0}
         mock_result.histogram_base64 = "base64encodedstring"
+        mock_result.expected_shortfall = 65000.0
+        mock_result.var_value_lower = 40000.0
+        mock_result.var_value_upper = 70000.0
+        mock_result.diagnostics = {
+            "max_rhat": 1.003,
+            "min_ess": 4290.0,
+            "divergences": 0,
+            "converged": True,
+        }
         mock_run.return_value = mock_result
 
         payload = {
@@ -195,6 +223,20 @@ class TestAnalyseEndpoint:
         response = client.post("/analyse", json=payload)
         assert response.status_code == 400
         assert response.json()["detail"] == "Datos de entrada invalidos"
+
+    @patch("backend.main.run_risk_analysis")
+    def test_analyse_maps_convergence_failure_to_500(self, mock_run) -> None:
+        """A posterior that did not converge must not be reported as a result."""
+        mock_run.side_effect = ConvergenceError("El muestreo no convergio: rhat 1.5")
+
+        payload = {
+            "returns": [-0.01, 0.005, -0.003, 0.006, -0.002, 0.01, -0.005, 0.003, -0.008, 0.004],
+            "investment_amount": 1000000,
+        }
+        response = client.post("/analyse", json=payload)
+
+        assert response.status_code == 500
+        assert "no convergio" in response.json()["detail"]
 
     @patch("backend.main.asyncio.wait_for")
     @patch("backend.main.run_risk_analysis")

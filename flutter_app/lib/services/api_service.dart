@@ -2,20 +2,50 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
+class ConvergenceDiagnostics {
+  ConvergenceDiagnostics({
+    required this.maxRhat,
+    required this.minEss,
+    required this.divergences,
+    required this.converged,
+  });
+
+  factory ConvergenceDiagnostics.fromJson(Map<String, dynamic> json) {
+    return ConvergenceDiagnostics(
+      maxRhat: (json['max_rhat'] as num).toDouble(),
+      minEss: (json['min_ess'] as num).toDouble(),
+      divergences: (json['divergences'] as num).toInt(),
+      converged: json['converged'] as bool,
+    );
+  }
+
+  final double maxRhat;
+  final double minEss;
+  final int divergences;
+  final bool converged;
+}
+
 class RiskResponse {
   RiskResponse({
     required this.varValue,
+    required this.varValueLower,
+    required this.varValueUpper,
+    required this.expectedShortfall,
     required this.thresholdProbability,
     required this.investmentAmount,
     required this.varConfidence,
     required this.lossThreshold,
     required this.parameterMeans,
     required this.histogramBase64,
+    required this.diagnostics,
   });
 
   factory RiskResponse.fromJson(Map<String, dynamic> json) {
     return RiskResponse(
       varValue: (json['var_value'] as num).toDouble(),
+      varValueLower: (json['var_value_lower'] as num).toDouble(),
+      varValueUpper: (json['var_value_upper'] as num).toDouble(),
+      expectedShortfall: (json['expected_shortfall'] as num).toDouble(),
       thresholdProbability: (json['threshold_probability'] as num).toDouble(),
       investmentAmount: (json['investment_amount'] as num).toDouble(),
       varConfidence: (json['var_confidence'] as num).toDouble(),
@@ -23,16 +53,22 @@ class RiskResponse {
       parameterMeans: (json['parameter_means'] as Map<String, dynamic>)
           .map((key, value) => MapEntry(key, (value as num).toDouble())),
       histogramBase64: json['histogram_base64'] as String,
+      diagnostics: ConvergenceDiagnostics.fromJson(
+          json['diagnostics'] as Map<String, dynamic>),
     );
   }
 
   final double varValue;
+  final double varValueLower;
+  final double varValueUpper;
+  final double expectedShortfall;
   final double thresholdProbability;
   final double investmentAmount;
   final double varConfidence;
   final double lossThreshold;
   final Map<String, double> parameterMeans;
   final String histogramBase64;
+  final ConvergenceDiagnostics diagnostics;
 }
 
 class ApiService {
