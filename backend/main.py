@@ -22,7 +22,7 @@ MODEL_DIR = Path(__file__).resolve().parents[1]
 if str(MODEL_DIR) not in sys.path:
     sys.path.insert(0, str(MODEL_DIR))
 
-from Analisis_Riesgo_PyMC import run_risk_analysis
+from Analisis_Riesgo_PyMC import ConvergenceError, run_risk_analysis
 
 
 @dataclass(frozen=True)
@@ -101,17 +101,25 @@ async def analyse(request: RiskRequest) -> RiskResponse:
         # The timeout is expected behaviour, not a programming error, so the
         # original exception is not chained into the response.
         raise HTTPException(status_code=504, detail="Inference timed out") from None
+    except ConvergenceError as exc:
+        # Not the caller's fault and not retryable in place: the sampler did not
+        # produce a posterior that can be reported.
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     return RiskResponse(
         var_value=result.var_value,
+        var_value_lower=result.var_value_lower,
+        var_value_upper=result.var_value_upper,
+        expected_shortfall=result.expected_shortfall,
         threshold_probability=result.threshold_probability,
         investment_amount=result.investment_amount,
         var_confidence=result.var_confidence,
         loss_threshold=result.loss_threshold,
         parameter_means=result.parameter_means,
         histogram_base64=result.histogram_base64,
+        diagnostics=result.diagnostics,
     )
 
 

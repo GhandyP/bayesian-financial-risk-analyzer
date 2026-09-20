@@ -1,5 +1,8 @@
 {
   "var_value": 50000.0,
+  "var_value_lower": 40000.0,
+  "var_value_upper": 70000.0,
+  "expected_shortfall": 65000.0,
   "threshold_probability": 0.05,
   "investment_amount": 1000000.0,
   "var_confidence": 0.95,
@@ -9,5 +12,11 @@
     "desviacion_retorno": 0.02,
     "nu": 8.0
   },
-  "histogram_base64": "iVBORw0KGgo="
+  "histogram_base64": "iVBORw0KGgo=",
+  "diagnostics": {
+    "max_rhat": 1.003,
+    "min_ess": 4290.0,
+    "divergences": 0,
+    "converged": true
+  }
 }

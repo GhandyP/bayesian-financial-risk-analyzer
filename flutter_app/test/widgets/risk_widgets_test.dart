@@ -7,6 +7,9 @@ import 'package:flutter_test/flutter_test.dart';
 RiskResponse _buildResponse() {
   return RiskResponse(
     varValue: 50000,
+    varValueLower: 40000,
+    varValueUpper: 70000,
+    expectedShortfall: 65000,
     thresholdProbability: 0.05,
     investmentAmount: 1000000,
     varConfidence: 0.95,
@@ -16,6 +19,12 @@ RiskResponse _buildResponse() {
       'desviacion_retorno': 0.02,
     },
     histogramBase64: '',
+    diagnostics: ConvergenceDiagnostics(
+      maxRhat: 1.003,
+      minEss: 4290,
+      divergences: 0,
+      converged: true,
+    ),
   );
 }
 
@@ -163,6 +172,13 @@ void main() {
       );
 
       expect(find.text('Resumen de riesgo'), findsOneWidget);
+      expect(find.text('ES 0.95: 65000'), findsOneWidget);
+      expect(find.text('VaR intervalo 90%: 40000 - 70000'), findsOneWidget);
+      expect(find.text('Calidad del muestreo'), findsOneWidget);
+      expect(
+        find.text('rhat 1.003 | ESS 4290 | divergencias 0'),
+        findsOneWidget,
+      );
       expect(find.text('Medias de parametros'), findsOneWidget);
       expect(find.text('media_retorno: -0.00100'), findsOneWidget);
       expect(find.text('desviacion_retorno: 0.02000'), findsOneWidget);
