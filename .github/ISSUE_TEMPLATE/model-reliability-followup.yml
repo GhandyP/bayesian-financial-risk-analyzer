@@ -1,0 +1,51 @@
+name: Seguimiento de fiabilidad del modelo
+description: Registrar hallazgos de fiabilidad del análisis de riesgo y sus criterios de resolución.
+title: "[Fiabilidad] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Usá este formulario para describir un hallazgo de fiabilidad del modelo o de presentación de resultados.
+
+  - type: input
+    id: review_finding
+    attributes:
+      label: Referencia del hallazgo
+      description: Indicá el ID de review si existe; por ejemplo, R2-001 o R4-low-draws-convergence.
+      placeholder: R2-001
+    validations:
+      required: true
+
+  - type: textarea
+    id: observed_behavior
+    attributes:
+      label: Comportamiento observado
+      description: Describí qué sucede actualmente y bajo qué condiciones.
+      placeholder: Incluí un ejemplo reproducible cuando sea posible.
+    validations:
+      required: true
+
+  - type: textarea
+    id: user_impact
+    attributes:
+      label: Impacto en el usuario o en el análisis
+      description: Explicá por qué el comportamiento observado importa.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected_behavior
+    attributes:
+      label: Comportamiento esperado y criterios de aceptación
+      description: Indicá qué resultado permitiría considerar resuelto el hallazgo.
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidencia o reproducción
+      description: Agregá resultados de tests, diagnósticos o pasos mínimos para reproducirlo.
+      placeholder: Opcional si la evidencia ya está en una revisión o issue relacionado.
+    validations:
+      required: false
