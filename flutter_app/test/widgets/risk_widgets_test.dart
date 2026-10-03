@@ -173,7 +173,7 @@ void main() {
 
       expect(find.text('Resumen de riesgo'), findsOneWidget);
       expect(find.text('ES 0.95: 65000'), findsOneWidget);
-      expect(find.text('VaR intervalo 90%: 40000 - 70000'), findsOneWidget);
+      expect(find.text('Intervalo creíble del VaR (90%): 40000 - 70000'), findsOneWidget);
       expect(find.text('Calidad del muestreo'), findsOneWidget);
       expect(
         find.text('rhat 1.003 | ESS 4290 | divergencias 0'),

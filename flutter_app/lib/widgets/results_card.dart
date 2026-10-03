@@ -34,7 +34,7 @@ class ResultsCard extends StatelessWidget {
             Text(
                 'VaR ${response.varConfidence.toStringAsFixed(2)}: ${response.varValue.toStringAsFixed(0)}'),
             Text(
-                'VaR intervalo 90%: ${response.varValueLower.toStringAsFixed(0)} '
+                'Intervalo creíble del VaR (90%): ${response.varValueLower.toStringAsFixed(0)} '
                 '- ${response.varValueUpper.toStringAsFixed(0)}'),
             Text(
                 'ES ${response.varConfidence.toStringAsFixed(2)}: '

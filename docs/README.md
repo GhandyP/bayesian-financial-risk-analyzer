@@ -21,9 +21,10 @@ Their `Branch:` headers name branches that were deleted after the merges: the wo
 
 The archived plans are history. For how the project works today, read the top-level `README.md` (setup, API contract, model assumptions and explicit non-goals) and the `AGENTS.md` files (one per area: repository root, `backend/`, `flutter_app/`).
 
+## Resolved advisories
+
+- **R2-001** — Resolved by clarifying the ResultsCard label as the 90% credible interval for VaR. See [issue #3](https://github.com/GhandyP/bayesian-financial-risk-analyzer/issues/3).
+
 ## Deferred work
 
-Neither item below blocks anything that shipped, and both are code-level rather than process-level.
-
-1. **`R2-001`** — the label of the VaR credible interval in `flutter_app/lib/widgets/results_card.dart` does not explain that the range is parameter uncertainty rather than a confidence interval.
-2. **`R4-low-draws-convergence`** — the API accepts `draws=500`, but that configuration was measured not to converge on fat-tailed data (rhat 1.0260, ESS 258), so such a request returns 500. Raising the minimum, or degrading with a warning, is an open decision. The README documents the measured behaviour.
+- **R4-low-draws-convergence** ([issue #4](https://github.com/GhandyP/bayesian-financial-risk-analyzer/issues/4)) remains open: the API accepts `draws=500`, but that configuration was measured not to converge on fat-tailed data (rhat 1.0260, ESS 258), so such a request returns 500. The approved follow-up keeps the existing data-dependent gate and draw bounds, adds actionable guidance, and avoids automatic retries. The README documents the measured behaviour.
