@@ -14,7 +14,7 @@ Document the inaccessible legacy review lineage as unresolved and make the remai
 - Add an archival note under `docs/archive/` describing the old lineage's known history and the current inability to bind it.
 - Add `docs/remaining-work.md` with the ordered PR work, issue status, and the legacy-lineage blocker.
 - Link both documents from `docs/README.md`.
-- Do not mutate native review authority, start a new review, reset/recover/abandon a lineage, close issues, merge PRs, or change advisory code.
+- Do not mutate the old lineage's native authority or follow the unrelated fresh START offered for it. Do not RESET/RECOVER/ABANDON that lineage, close issues, merge PRs, or change advisory code. The separate review lifecycle for this documentation work-unit follows the user-owned RDD switch.
 - Keep this documentation on a separate `docs/` branch so the existing issue-specific PR slices remain focused.
 
 ## Tasks
@@ -42,9 +42,9 @@ Document the inaccessible legacy review lineage as unresolved and make the remai
 
 - The current native controller did not bind the exact old lineage ID in this repository context and returned no repair candidates. Its `inspect` offered a fresh review for the unrelated accumulated seven-path candidate; that transition was not followed.
 - Historical project memory says the old lineage was `correction_required` for an obsolete candidate and that correction captures were rejected. Those historical observations will be attributed as historical, not represented as current provider authority.
-- No RESET, RECOVER, ABANDON, commit, or push has occurred for this task yet.
+- No RESET, RECOVER, or ABANDON was performed on the old lineage. This separate documentation work-unit was natively inspected and returned low-risk `state: approved`, `action: closed`, and `lenses_required: false` under lineage `review-34142cdb45f43d59`; no capture or acknowledgment route was returned.
 
 ## Delivery evidence
 
-- Work-unit commit: pending.
+- Work-unit commit: `c8412a7b80625cf565fe69c482f345a3d1900f1f` (`docs(review): archive legacy lineage and list pending work`).
 - Push: pending.
