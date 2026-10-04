@@ -2,7 +2,7 @@
 
 **Branch**: `docs/old-lineage-status`
 **Owner**: parent session (el Gentleman)
-**Status**: in progress
+**Status**: completed (documentation delivered; old native lineage remains unresolved)
 
 ## Objective
 
@@ -21,7 +21,7 @@ Document the inaccessible legacy review lineage as unresolved and make the remai
 
 | ID | Task | Status | Evidence |
 |---|---|---|---|
-| D1 | Archive the legacy-lineage diagnosis and document all currently pending repository work. | IN_PROGRESS | User approved the recommended archival scope. Historical memory records lineage `review-18744d5406eacc4e` as `correction_required` with an unexecutable correction route; current native status/inspect returned `applicability: unrelated`, `repair: unsupported`, and no candidates. No native mutation was performed. |
+| D1 | Archive the legacy-lineage diagnosis and document all currently pending repository work. | DONE | Created `docs/archive/old-review-lineage.md`, `docs/remaining-work.md`, and updated the docs index. Staged diff/Markdown/link checks passed. Work-unit commit `c8412a7b80625cf565fe69c482f345a3d1900f1f` was pushed to `origin/docs/old-lineage-status`; task-record follow-up commit `161a378` is also pushed. The old lineage remains unchanged. |
 
 ## Acceptance criteria
 
@@ -43,8 +43,10 @@ Document the inaccessible legacy review lineage as unresolved and make the remai
 - The current native controller did not bind the exact old lineage ID in this repository context and returned no repair candidates. Its `inspect` offered a fresh review for the unrelated accumulated seven-path candidate; that transition was not followed.
 - Historical project memory says the old lineage was `correction_required` for an obsolete candidate and that correction captures were rejected. Those historical observations will be attributed as historical, not represented as current provider authority.
 - No RESET, RECOVER, or ABANDON was performed on the old lineage. This separate documentation work-unit was natively inspected and returned low-risk `state: approved`, `action: closed`, and `lenses_required: false` under lineage `review-34142cdb45f43d59`; no capture or acknowledgment route was returned.
+- The work-unit is a passive documentation change. No application tests were applicable; structural checks passed.
 
 ## Delivery evidence
 
 - Work-unit commit: `c8412a7b80625cf565fe69c482f345a3d1900f1f` (`docs(review): archive legacy lineage and list pending work`).
-- Push: pending.
+- Task-record commit: `161a378` (`docs(odd): record archive task evidence`).
+- Push: completed to `origin/docs/old-lineage-status`; no PR was created.
