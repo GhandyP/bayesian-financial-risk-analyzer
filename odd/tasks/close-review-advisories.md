@@ -2,7 +2,7 @@
 
 **Branch**: `fix/close-review-advisories`
 **Owner**: parent session (el Gentleman)
-**Status**: in progress
+**Status**: completed (advisories; A3 remains deferred)
 
 ## Objective
 
@@ -29,7 +29,7 @@ Close the two deferred, non-blocking findings from the prior native review witho
 |---|---|---|---|
 | A0 | Establish the authorized issue-intake form and repository approval label. | DONE | Native review `review-20409118ee8a4d48` approved and acknowledged; YAML form parsed; repo label read back; commit `8f7fc451fc513087cdb273d584229a7f85602ed8` is on `main` at `cf09b97`; CI run `37049527767` succeeded. |
 | A1 | Clarify the VaR credible-interval label for approved issue #3, with a focused widget test and docs. | DONE | Work-unit commit `135d4ec0c63b6df024ba5ac73fecb2bfcbbcccce` was pushed to `origin/fix/close-review-advisories` and approved/acknowledged under native lineage `review-880b037661960504`. Issue #3 remains OPEN with `status:approved`. CI run `37169068216` passed backend lint/tests/real-model tests and Flutter analyze/tests. |
-| A2 | Make convergence failures actionable for approved issue #4, with an API regression test and docs. | IN_PROGRESS | Issue #4 is OPEN with `status:approved`. Test-first RED was observed at the missing-guidance assertion; the focused tests now pass. `git diff --check`, `ruff check .`, and non-slow pytest pass; commit/review/CI remain. |
+| A2 | Make convergence failures actionable for approved issue #4, with an API regression test and docs. | DONE | Work-unit commit `92059ffbf83b20ebb21e8bae74870e360e9f456c` was pushed to `origin/fix/close-review-advisories` and approved/acknowledged under native lineage `review-9667106dc270a73c`. Issue #4 remains OPEN with `status:approved`. CI run `37171100302` passed backend lint/tests/real-model tests and Flutter analyze/tests. |
 | A3 | Resolve the old review lineage only after separate explicit user authorization for its destructive disposition. | DEFERRED | No reset/recovery is authorized by this request; lineage remains untouched. |
 
 ## Acceptance criteria
@@ -61,10 +61,10 @@ Close the two deferred, non-blocking findings from the prior native review witho
 - Issues #3 (R2-001) and #4 (R4-low-draws-convergence) were created from the YAML form. Target-host read-back confirmed exact titles/bodies and OPEN state. After the user explicitly selected approval for both, target-host reads verified actor `GhandyP` with `ADMIN`, and pre/post read-backs confirmed `status:approved` on each issue without conflicting status labels.
 - CI run `37049527767` for `cf09b977f00606bfc122a7f5a313a98e9e62d3e3` completed successfully. RDD is enabled and there are no open PR conflicts. Current main reproduction confirms the old VaR label and that convergence failures currently expose metrics but no adjustment guidance; `/analyse` returns the `ConvergenceError` detail as HTTP 500.
 - CodeGraph impact mapping found the VaR display in `flutter_app/lib/widgets/results_card.dart`, the existing UI tests in `flutter_app/test/widgets/risk_widgets_test.dart`, and the convergence path from `Analisis_Riesgo_PyMC.py` through `backend/main.py` to `backend/test_main.py`. Issue #3 commit `135d4ec0c63b6df024ba5ac73fecb2bfcbbcccce` updates the label, test expectation, and current documentation; native review `review-880b037661960504` approved and consumed the exact candidate. Local Flutter was unavailable, so local RED/GREEN is not claimed; CI run `37169068216` passed both Flutter analyze/tests and all backend jobs, including real model tests.
-- Issue #4 test-first evidence: the focused backend test failed first because `Revise los datos` was absent, then both focused tests passed after the message update. `git diff --check`, `ruff check .`, and `python3 -m pytest -m "not slow" -q` passed (20 passed, 3 deselected). Pytest emitted a Starlette deprecation warning and an unawaited `to_thread` coroutine warning. The fail-closed gate, draw bounds, sampler defaults, and no-retry behavior remain unchanged.
+- Issue #4 test-first evidence: the focused backend test failed first because `Revise los datos` was absent, then both focused tests passed after the message update. `git diff --check`, `ruff check .`, and `python3 -m pytest -m "not slow" -q` passed (20 passed, 3 deselected). Pytest emitted a Starlette deprecation warning and an unawaited `to_thread` coroutine warning. Work-unit commit `92059ffbf83b20ebb21e8bae74870e360e9f456c` was approved and consumed under native review `review-9667106dc270a73c`; the branch push succeeded, and CI `37171100302` passed. The fail-closed gate, draw bounds, sampler defaults, and no-retry behavior remain unchanged.
 - The old lineage `review-18744d5406eacc4e` is explicitly out of scope; reset/recovery remains gated on separate user authorization.
 - Flutter is unavailable in the local environment, so Flutter analyzer/widget tests need CI or must be reported as unavailable.
 
 ## Next step
 
-Commit the approved issue #4 work unit, run its native review, push the branch, and verify the resulting CI before marking A2 complete.
+Advisory implementation is complete on `fix/close-review-advisories`. Issues #3 and #4 remain OPEN with `status:approved`; close them only with separate exact authorization. Old lineage `review-18744d5406eacc4e` remains untouched and requires separate authorization for destructive recovery.
