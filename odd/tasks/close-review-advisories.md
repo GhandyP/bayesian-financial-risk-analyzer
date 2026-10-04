@@ -2,7 +2,7 @@
 
 **Branch**: `fix/close-review-advisories`
 **Owner**: parent session (el Gentleman)
-**Status**: in progress
+**Status**: completed (advisories; A3 remains deferred)
 
 ## Objective
 
@@ -28,8 +28,8 @@ Close the two deferred, non-blocking findings from the prior native review witho
 | ID | Task | Status | Evidence |
 |---|---|---|---|
 | A0 | Establish the authorized issue-intake form and repository approval label. | DONE | Native review `review-20409118ee8a4d48` approved and acknowledged; YAML form parsed; repo label read back; commit `8f7fc451fc513087cdb273d584229a7f85602ed8` is on `main` at `cf09b97`; CI run `37049527767` succeeded. |
-| A1 | Clarify the VaR credible-interval label for approved issue #3, with a focused widget test and docs. | IN_PROGRESS | Issue #3 is OPEN with `status:approved`; the widget expectation and label are updated, and docs now mark R2-001 resolved. Flutter is unavailable locally, so RED/GREEN is not observed; candidate checks remain. |
-| A2 | Make convergence failures actionable for approved issue #4, with an API regression test and docs. | PENDING | Issue #4 is OPEN with `status:approved`; keep the existing fail-closed gate and sampler behavior. |
+| A1 | Clarify the VaR credible-interval label for approved issue #3, with a focused widget test and docs. | DONE | Work-unit commit `135d4ec0c63b6df024ba5ac73fecb2bfcbbcccce` was pushed to `origin/fix/close-review-advisories` and approved/acknowledged under native lineage `review-880b037661960504`. Issue #3 remains OPEN with `status:approved`. CI run `37169068216` passed backend lint/tests/real-model tests and Flutter analyze/tests. |
+| A2 | Make convergence failures actionable for approved issue #4, with an API regression test and docs. | DONE | Work-unit commit `92059ffbf83b20ebb21e8bae74870e360e9f456c` was pushed to `origin/fix/close-review-advisories` and approved/acknowledged under native lineage `review-9667106dc270a73c`. Issue #4 remains OPEN with `status:approved`. CI run `37171100302` passed backend lint/tests/real-model tests and Flutter analyze/tests. |
 | A3 | Resolve the old review lineage only after separate explicit user authorization for its destructive disposition. | DEFERRED | No reset/recovery is authorized by this request; lineage remains untouched. |
 
 ## Acceptance criteria
@@ -60,10 +60,11 @@ Close the two deferred, non-blocking findings from the prior native review witho
 - The form and task record were reviewed and acknowledged under native lineage `review-20409118ee8a4d48`; YAML parse and staged diff checks passed. Work-unit commit `8f7fc451fc513087cdb273d584229a7f85602ed8` (`chore(issue-forms): add model reliability follow-up form`) is on `main` at `cf09b97`.
 - Issues #3 (R2-001) and #4 (R4-low-draws-convergence) were created from the YAML form. Target-host read-back confirmed exact titles/bodies and OPEN state. After the user explicitly selected approval for both, target-host reads verified actor `GhandyP` with `ADMIN`, and pre/post read-backs confirmed `status:approved` on each issue without conflicting status labels.
 - CI run `37049527767` for `cf09b977f00606bfc122a7f5a313a98e9e62d3e3` completed successfully. RDD is enabled and there are no open PR conflicts. Current main reproduction confirms the old VaR label and that convergence failures currently expose metrics but no adjustment guidance; `/analyse` returns the `ConvergenceError` detail as HTTP 500.
-- CodeGraph impact mapping found the VaR display in `flutter_app/lib/widgets/results_card.dart`, the existing UI tests in `flutter_app/test/widgets/risk_widgets_test.dart`, and the convergence path from `Analisis_Riesgo_PyMC.py` through `backend/main.py` to `backend/test_main.py`. The #3 candidate changes the label, test expectation, and current documentation; the Flutter runner is unavailable, so no RED/GREEN result is claimed. Issue #4 remains unchanged.
+- CodeGraph impact mapping found the VaR display in `flutter_app/lib/widgets/results_card.dart`, the existing UI tests in `flutter_app/test/widgets/risk_widgets_test.dart`, and the convergence path from `Analisis_Riesgo_PyMC.py` through `backend/main.py` to `backend/test_main.py`. Issue #3 commit `135d4ec0c63b6df024ba5ac73fecb2bfcbbcccce` updates the label, test expectation, and current documentation; native review `review-880b037661960504` approved and consumed the exact candidate. Local Flutter was unavailable, so local RED/GREEN is not claimed; CI run `37169068216` passed both Flutter analyze/tests and all backend jobs, including real model tests.
+- Issue #4 test-first evidence: the focused backend test failed first because `Revise los datos` was absent, then both focused tests passed after the message update. `git diff --check`, `ruff check .`, and `python3 -m pytest -m "not slow" -q` passed (20 passed, 3 deselected). Pytest emitted a Starlette deprecation warning and an unawaited `to_thread` coroutine warning. Work-unit commit `92059ffbf83b20ebb21e8bae74870e360e9f456c` was approved and consumed under native review `review-9667106dc270a73c`; the branch push succeeded, and CI `37171100302` passed. The fail-closed gate, draw bounds, sampler defaults, and no-retry behavior remain unchanged.
 - The old lineage `review-18744d5406eacc4e` is explicitly out of scope; reset/recovery remains gated on separate user authorization.
 - Flutter is unavailable in the local environment, so Flutter analyzer/widget tests need CI or must be reported as unavailable.
 
 ## Next step
 
-Finish read-only validation and commit the issue #3 work unit on `fix/close-review-advisories`. Keep issue #4 as a separate work unit.
+Advisory implementation is complete on `fix/close-review-advisories`. Issues #3 and #4 remain OPEN with `status:approved`; close them only with separate exact authorization. Old lineage `review-18744d5406eacc4e` remains untouched and requires separate authorization for destructive recovery.

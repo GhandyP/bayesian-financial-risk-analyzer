@@ -126,8 +126,11 @@ distinguir de uno valido.
 
 Con los valores por defecto (`draws=2000`, `tune=1000`, 4 cadenas) un request tarda alrededor
 de 45-75 segundos, y el timeout del backend es de 120 segundos. La API acepta `draws` desde 500,
-pero **500 no converge con colas gruesas** (medido: rhat 1.026, ESS 258), asi que ese request
-devuelve 500. Para uso real, `draws >= 2000`.
+pero **500 no convergio en la medicion con colas gruesas** (rhat 1.026, ESS 258), asi que ese
+request devuelve 500 con diagnosticos y orientacion: revise la serie de entrada e intente aumentar
+`draws` o `tune` si procede. La convergencia depende de la serie y aumentar esos valores no la
+garantiza; un request mayor puede superar el timeout de 120 segundos. No hay reintento automatico.
+`draws >= 2000` es solo un punto de partida empirico, no un minimo impuesto ni una garantia.
 
 ## Evidencia de verificacion
 
