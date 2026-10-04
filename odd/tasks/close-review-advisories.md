@@ -27,9 +27,10 @@ Close the two deferred, non-blocking findings from the prior native review witho
 
 | ID | Task | Status | Evidence |
 |---|---|---|---|
-| A0 | Establish the authorized issue-intake form and repository approval label. | IN_PROGRESS | Native review `review-20409118ee8a4d48` approved and acknowledged; YAML form parsed; repo label read back. Work-unit commit `8f7fc451fc513087cdb273d584229a7f85602ed8` is local; form is not on `main` yet. |
-| A1 | Close both advisories only after separate approved issues, with focused tests and docs. | BLOCKED | No issue exists yet; implementation stays behind the issue-approval gate. |
-| A2 | Resolve the old review lineage only after separate explicit user authorization for its destructive disposition. | DEFERRED | No reset/recovery is authorized by this request; lineage remains untouched. |
+| A0 | Establish the authorized issue-intake form and repository approval label. | DONE | Native review `review-20409118ee8a4d48` approved and acknowledged; YAML form parsed; repo label read back; commit `8f7fc451fc513087cdb273d584229a7f85602ed8` is on `main` at `cf09b97`; CI run `37049527767` succeeded. |
+| A1 | Clarify the VaR credible-interval label for approved issue #3, with a focused widget test and docs. | IN_PROGRESS | Issue #3 is OPEN with `status:approved`; the widget expectation and label are updated, and docs now mark R2-001 resolved. Flutter is unavailable locally, so RED/GREEN is not observed; candidate checks remain. |
+| A2 | Make convergence failures actionable for approved issue #4, with an API regression test and docs. | PENDING | Issue #4 is OPEN with `status:approved`; keep the existing fail-closed gate and sampler behavior. |
+| A3 | Resolve the old review lineage only after separate explicit user authorization for its destructive disposition. | DEFERRED | No reset/recovery is authorized by this request; lineage remains untouched. |
 
 ## Acceptance criteria
 
@@ -54,13 +55,15 @@ Close the two deferred, non-blocking findings from the prior native review witho
 - The existing convergence gate remains authoritative because minimum draws needed for convergence depend on the input data; the API's `detail` is propagated by the Flutter API service.
 - No automatic retry or fixed higher minimum will be added; neither guarantees convergence and a retry could exceed the current timeout.
 - RDD mode is globally on (`gentle-ai review mode status`); the verified target is `https://github.com/GhandyP/bayesian-financial-risk-analyzer`.
-- The repository currently has no GitHub issues, no open PRs, no YAML issue form on `main`, and no `status:approved` label. The loaded defect workflow requires an approved issue before implementation and forbids creating an issue without a repository YAML form.
+- At setup start, the repository had no issues, YAML issue form, or `status:approved` label. A0 added the form and label; the form is now on `main`, and issues #3 and #4 are open. The loaded defect workflow requires a separate approved issue per independent finding before implementation.
 - The user explicitly authorized adding the YAML form and creating the repository-level `status:approved` label. The label was created after confirming target-host `viewerPermission: ADMIN`; read-back confirmed its description and color.
-- The form and task record were reviewed and acknowledged under native lineage `review-20409118ee8a4d48`; YAML parse and staged diff checks passed. Work-unit commit: `8f7fc451fc513087cdb273d584229a7f85602ed8` (`chore(issue-forms): add model reliability follow-up form`). It remains local and is not yet on `main`. No issue has been created or approved, and no product source was changed.
-- Each advisory will remain blocked until its own issue is approved; the protected approval label will not be attached without a separate exact user instruction for that issue.
+- The form and task record were reviewed and acknowledged under native lineage `review-20409118ee8a4d48`; YAML parse and staged diff checks passed. Work-unit commit `8f7fc451fc513087cdb273d584229a7f85602ed8` (`chore(issue-forms): add model reliability follow-up form`) is on `main` at `cf09b97`.
+- Issues #3 (R2-001) and #4 (R4-low-draws-convergence) were created from the YAML form. Target-host read-back confirmed exact titles/bodies and OPEN state. After the user explicitly selected approval for both, target-host reads verified actor `GhandyP` with `ADMIN`, and pre/post read-backs confirmed `status:approved` on each issue without conflicting status labels.
+- CI run `37049527767` for `cf09b977f00606bfc122a7f5a313a98e9e62d3e3` completed successfully. RDD is enabled and there are no open PR conflicts. Current main reproduction confirms the old VaR label and that convergence failures currently expose metrics but no adjustment guidance; `/analyse` returns the `ConvergenceError` detail as HTTP 500.
+- CodeGraph impact mapping found the VaR display in `flutter_app/lib/widgets/results_card.dart`, the existing UI tests in `flutter_app/test/widgets/risk_widgets_test.dart`, and the convergence path from `Analisis_Riesgo_PyMC.py` through `backend/main.py` to `backend/test_main.py`. The #3 candidate changes the label, test expectation, and current documentation; the Flutter runner is unavailable, so no RED/GREEN result is claimed. Issue #4 remains unchanged.
 - The old lineage `review-18744d5406eacc4e` is explicitly out of scope; reset/recovery remains gated on separate user authorization.
 - Flutter is unavailable in the local environment, so Flutter analyzer/widget tests need CI or must be reported as unavailable.
 
 ## Next step
 
-Publish the approved workflow setup to `main`, then create one issue per advisory. Stop for explicit approval of each issue before product implementation.
+Finish read-only validation and commit the issue #3 work unit on `fix/close-review-advisories`. Keep issue #4 as a separate work unit.
