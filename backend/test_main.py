@@ -19,7 +19,7 @@ MODEL_DIR = Path(__file__).resolve().parents[1]
 if str(MODEL_DIR) not in sys.path:
     sys.path.insert(0, str(MODEL_DIR))
 
-from Analisis_Riesgo_PyMC import ConvergenceError, run_risk_analysis
+from Analisis_Riesgo_PyMC import ConvergenceError, _require_convergence, run_risk_analysis
 from backend.main import app
 from backend.models import RiskResponse
 
@@ -227,7 +227,12 @@ class TestAnalyseEndpoint:
     @patch("backend.main.run_risk_analysis")
     def test_analyse_maps_convergence_failure_to_500(self, mock_run) -> None:
         """A posterior that did not converge must not be reported as a result."""
-        mock_run.side_effect = ConvergenceError("El muestreo no convergio: rhat 1.5")
+        detail = (
+            "El muestreo no convergio: R-hat maximo=1.026, ESS minimo=258.0, "
+            "divergencias=0. Revise los datos: la convergencia depende de la serie. "
+            "Puede intentar aumentar draws o tune, pero no se garantiza la convergencia."
+        )
+        mock_run.side_effect = ConvergenceError(detail)
 
         payload = {
             "returns": [-0.01, 0.005, -0.003, 0.006, -0.002, 0.01, -0.005, 0.003, -0.008, 0.004],
@@ -236,7 +241,7 @@ class TestAnalyseEndpoint:
         response = client.post("/analyse", json=payload)
 
         assert response.status_code == 500
-        assert "no convergio" in response.json()["detail"]
+        assert response.json()["detail"] == detail
 
     @patch("backend.main.asyncio.wait_for")
     @patch("backend.main.run_risk_analysis")
@@ -254,6 +259,25 @@ class TestAnalyseEndpoint:
 
 class TestModelDefensiveValidation:
     """Defensive checks inside Analisis_Riesgo_PyMC (before PyMC sampling)."""
+
+    def test_convergence_failure_includes_actionable_guidance(self) -> None:
+        """A failed convergence gate reports diagnostics and next steps."""
+        with pytest.raises(ConvergenceError) as exc_info:
+            _require_convergence(
+                {
+                    "converged": False,
+                    "max_rhat": 1.026,
+                    "min_ess": 258.0,
+                    "divergences": 0,
+                }
+            )
+
+        message = str(exc_info.value)
+        assert "1.026" in message
+        assert "ESS minimo 258" in message
+        assert "Revise los datos" in message
+        assert "aumentar draws o tune" in message
+        assert "no se garantiza" in message
 
     def test_model_rejects_non_finite_returns(self) -> None:
         """run_risk_analysis should raise ValueError on NaN/infinite returns."""

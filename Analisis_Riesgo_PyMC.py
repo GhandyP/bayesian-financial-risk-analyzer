@@ -367,7 +367,9 @@ def _require_convergence(diagnostics: dict[str, float | int | bool]) -> None:
         f"ESS minimo {diagnostics['min_ess']:.0f} "
         f"(minimo {MIN_EFFECTIVE_SAMPLE_SIZE:.0f}), "
         f"divergencias {diagnostics['divergences']} "
-        f"(maximo {MAX_DIVERGENCE_RATE:.1%} de las muestras)."
+        f"(maximo {MAX_DIVERGENCE_RATE:.1%} de las muestras). "
+        "Revise los datos: la convergencia depende de la serie de entrada. "
+        "Puede intentar aumentar draws o tune, pero no se garantiza la convergencia."
     )
 
 
