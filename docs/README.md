@@ -21,9 +21,10 @@ Their `Branch:` headers name branches that were deleted after the merges: the wo
 
 The archived plans are history. For how the project works today, read the top-level `README.md` (setup, API contract, model assumptions and explicit non-goals) and the `AGENTS.md` files (one per area: repository root, `backend/`, `flutter_app/`).
 
-## Deferred work
+## Active follow-up
 
-Neither item below blocks anything that shipped, and both are code-level rather than process-level.
+The two model-reliability advisories have separate fixes under review; neither change has merged to `main` yet. Follow the ordered steps in [remaining work](remaining-work.md).
 
-1. **`R2-001`** — the label of the VaR credible interval in `flutter_app/lib/widgets/results_card.dart` does not explain that the range is parameter uncertainty rather than a confidence interval.
-2. **`R4-low-draws-convergence`** — the API accepts `draws=500`, but that configuration was measured not to converge on fat-tailed data (rhat 1.0260, ESS 258), so such a request returns 500. Raising the minimum, or degrading with a warning, is an open decision. The README documents the measured behaviour.
+- **R2-001** — The VaR interval-label fix is in [PR #5](https://github.com/GhandyP/bayesian-financial-risk-analyzer/pull/5), linked to issue #3.
+- **R4-low-draws-convergence** — The actionable convergence-guidance fix is in [PR #6](https://github.com/GhandyP/bayesian-financial-risk-analyzer/pull/6), stacked on PR #5 and linked to issue #4.
+- **Legacy review lineage** — Still unresolved; see the [historical lineage note](archive/old-review-lineage.md).
