@@ -2,7 +2,7 @@
 
 **Branch**: `docs/readme-completeness`
 **Owner**: parent session (el Gentleman)
-**Status**: in progress (bilingual README verified; commit/push pending)
+**Status**: done (work-unit commit pushed; CI status pending)
 
 ## Objective
 
@@ -22,7 +22,7 @@ Make the root `README.md` a complete, accurate bilingual guide: the full English
 
 | ID | Task | Status | Evidence |
 |---|---|---|---|
-| R1 | Reorganize the root README into a complete and source-accurate guide, then run structural checks. | IN_PROGRESS | Rewritten with all English sections first and matching Spanish sections second. Verification confirmed order, anchors, balanced fences, paths, and source accuracy. README diff: 356 insertions, 110 deletions; one cohesive bilingual documentation unit. Commit/push authorized, still pending. |
+| R1 | Reorganize the root README into a complete and source-accurate guide, then run structural checks. | DONE | English-first/Spanish-second README verified and pushed in work-unit commit `5342bf6` (`docs(readme): add English-first bilingual guide`). Native review: low risk, approved, closed, no lenses required. CI run `37372075249` was queued at last check. |
 
 ## Acceptance criteria
 
@@ -46,5 +46,6 @@ Make the root `README.md` a complete, accurate bilingual guide: the full English
 - Root README now contains a complete English block followed by a complete Spanish block with parallel sections and distinct TOC anchors.
 - `gentle-ai-verify` confirmed content order, matching sections, anchor targets, 32 balanced code fences, local paths/commands, and source-backed API/config/model/CI facts. No unsupported empirical claims remain.
 - `git diff --check -- README.md` passed. No application tests apply to passive documentation.
-- README diff is 356 additions and 110 deletions (466 changed lines); it is one cohesive file-level bilingual guide. Commit/push are explicitly authorized; no PR is authorized.
-- Next: commit README plus task record, run the required native review preflight, push the branch, and report CI status.
+- README diff was 356 additions and 110 deletions (466 changed lines), one cohesive file-level bilingual guide. `git diff --check` passed; no application tests apply.
+- Work-unit commit `5342bf6a6f4de9bed4b4105746742a0cca9c7c2b` was reviewed natively as low-risk `approved`, action `closed`, with no lenses required, then pushed to `origin/docs/readme-completeness`. No PR was opened.
+- Post-push verification confirmed a clean worktree and matching local/remote commit. CI run `37372075249` was queued at last check.
